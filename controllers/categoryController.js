@@ -19,12 +19,13 @@ exports.getAllCategories = catchAsyncError(async (req, res, next) => {
   let categories = await apiFeature.query;
   console.log("categories", categories);
   let filteredCategoryCount = categories.length;
-  // apiFeature.pagination();
+  if(req.query.resultPerPage && req.query.currentPage) {
+    apiFeature.pagination();
 
-  console.log("filteredCategoryCount", filteredCategoryCount);
-  categories = await apiFeature.query.clone();
-
-  console.log("categories1", categories);
+    console.log("filteredCategoryCount", filteredCategoryCount);
+    categories = await apiFeature.query.clone();
+    console.log("categories1", categories);
+  }
   res.status(200).json({ categories, categoryCount, filteredCategoryCount });
 });
 
