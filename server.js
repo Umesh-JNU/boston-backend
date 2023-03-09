@@ -8,7 +8,7 @@ process.on("uncaughtException", (err) => {
 
 connectDatabase();
 
-const port = 5000 || process.env.PORT;
+const port = process.env.PORT || 4000;
 const server = app.listen(port, () => {
   console.log("app is listening on ", port);
 });
