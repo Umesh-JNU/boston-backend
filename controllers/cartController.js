@@ -8,13 +8,12 @@ exports.addItem = catchAsyncError(async (req, res, next) => {
   const { product, quantity } = req.body;
 
   const cart = await cartModel.findOne({ user: req.userId });
-  console.log("cart", cart);
 
   const isExist =
     cart?.items.filter((item) => item.product.toString() === product).length ===
     0;
 
-  console.log(isExist);
+  // console.log(isExist);
   if (isExist) {
     cart?.items.push({ product, quantity });
   } else {
@@ -29,9 +28,9 @@ exports.addItem = catchAsyncError(async (req, res, next) => {
   await (await cart.save()).populate("items.product");
 
   var total = 0;
-  if (cart.items.length > 0) {
-    cart.items.forEach(({ product, quantity }) => {
-      total += product.amount * quantity;
+  if (cart?.items.length > 0) {
+    cart?.items.forEach(({ product, quantity }) => {
+      total += product?.amount * quantity;
     });
   }
 
@@ -47,23 +46,23 @@ exports.deleteItem = catchAsyncError(async (req, res, next) => {
   const cart = await cartModel.findOne({ user: req.userId });
   console.log("cart", cart);
 
-  console.log("cart items", cart.items);
+  console.log("cart items", cart?.items);
   const isExist =
     cart.items.filter((item) => item.product.toString() === id).length === 0;
 
   if (isExist)
     return next(new ErrorHandler("Product is not found in the cart.", 401));
 
-  const index = cart.items.map((item) => item.product.toString()).indexOf(id);
+  const index = cart?.items.map((item) => item.product.toString()).indexOf(id);
 
-  await cart.items.splice(index, 1);
+  await cart?.items.splice(index, 1);
 
   await (await cart.save()).populate("items.product");
 
   var total = 0;
   if (cart.items.length > 0) {
-    cart.items.forEach(({ product, quantity }) => {
-      total += product.amount * quantity;
+    cart?.items.forEach(({ product, quantity }) => {
+      total += product?.amount * quantity;
     });
   }
 
@@ -139,7 +138,7 @@ exports.getItems = catchAsyncError(async (req, res, next) => {
   var total = 0;
   if (cart?.items.length > 0) {
     cart?.items.forEach(({ product, quantity }) => {
-      total += product.amount * quantity;
+      total += product?.amount * quantity;
     });
   }
 
