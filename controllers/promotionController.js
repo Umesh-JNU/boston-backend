@@ -4,7 +4,7 @@ const ErrorHandler = require("../utils/errorHandler");
 
 exports.createPromotion = catchAsyncError(async (req, res, next) => {
     console.log("add promotion", req.body);
-  const { product, updated_price } = req.body;
+  const { product, updated_price, promo_image } = req.body;
   const promotionCount = await promotionModel.countDocuments();
 
   if(promotionCount >= 3) {
@@ -14,7 +14,7 @@ exports.createPromotion = catchAsyncError(async (req, res, next) => {
   }
   
   const promotion = await (
-    await promotionModel.create({ product, updated_price })
+    await promotionModel.create({ product, updated_price, promo_image })
   ).populate("product");
   res.status(200).json({ promotion });
 });
@@ -34,10 +34,10 @@ exports.getPromotion = catchAsyncError(async (req, res, next) => {
 
 exports.updatePromotion = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
-  const { product, updated_price } = req.body;
+  const { product, updated_price, promo_image } = req.body;
   const promotion = await promotionModel.findByIdAndUpdate(
     id,
-    { product, updated_price },
+    { product, updated_price, promo_image },
     {
       new: true,
       runValidators: true,
