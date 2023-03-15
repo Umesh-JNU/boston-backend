@@ -6,6 +6,10 @@ const promotionSchema = new mongoose.Schema({
         ref: "Product",
         required: [true, "Please select a product."]
     },
+    promo_image: {
+        type: String,
+        required: [true, "Please select a image for promotion."]
+    },
     updated_price: {
         type: Number,
         required: [true, "Please mention the updated price."]
