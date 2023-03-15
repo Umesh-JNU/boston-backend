@@ -7,7 +7,8 @@ const APIFeatures = require("../utils/apiFeatures");
 const catchAsyncError = require("../utils/catchAsyncError");
 
 exports.createCategory = catchAsyncError(async (req, res, next) => {
-  const category = await categoryModel.create(req.body);
+  const {name, description, category_image} = req.body;
+  const category = await categoryModel.create({name, description, category_image});
   res.status(200).json({ category });
 });
 

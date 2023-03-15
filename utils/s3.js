@@ -1,5 +1,5 @@
-const S3 = require('aws-sdk/clients/s3');
-const multer  = require('multer')
+const S3 = require("aws-sdk/clients/s3");
+const multer = require("multer");
 
 exports.s3Uploadv2 = async (file) => {
   const s3 = new S3({
@@ -56,5 +56,5 @@ const fileFilter = (req, file, cb) => {
 exports.upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 11006600 },
+  limits: { fileSize: 11006600, files: 5 },
 });
