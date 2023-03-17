@@ -4,6 +4,7 @@ const {
   deleteCategory,
   updateCategory,
 } = require("../controllers/categoryController");
+const { getAllOrders, deleteOrder, getOrderById, updateOrderStatus } = require("../controllers/orderController");
 const {
   createProduct,
   updateProduct,
@@ -37,6 +38,13 @@ router
   .put(auth, isAdmin, updateUser)
   .get(auth, isAdmin, getUser)
   .delete(auth, isAdmin, deleteUser);
+
+router.get("/orders/all", auth, isAdmin, getAllOrders);
+router.put("/order/:id/update/status", auth, isAdmin, updateOrderStatus);
+router
+  .route("/order/:id")
+  .get(auth, isAdmin, getOrderById)
+  .delete(auth, isAdmin, deleteOrder);
 
 router.post("/category/create", auth, isAdmin, createCategory);
 router
