@@ -73,13 +73,10 @@ exports.getRecent = async (req, res, next) => {
 
 exports.getAll = async (req, res, next) => {
   try {
-    let query = {userId: req.userId};
+    let query = { userId: req.userId };
     if (req.query.status !== "all") query.status = req.query.status;
 
-    const apiFeature = new APIFeatures(
-      Order.find(query),
-      req.query
-    );  
+    const apiFeature = new APIFeatures(Order.find(query), req.query);
 
     const orders = await apiFeature.query;
     // const orders = await Order.find({ userId: req.userId });
@@ -89,7 +86,6 @@ exports.getAll = async (req, res, next) => {
     res.status(500).json(err);
   }
 };
-
 
 // admin control
 exports.deleteOrder = catchAsyncError(async (req, res, next) => {
@@ -133,15 +129,25 @@ exports.updateOrderStatus = catchAsyncError(async (req, res, next) => {
 exports.getAllOrders = catchAsyncError(async (req, res, next) => {
   console.log("req.query", req.query);
   let query = {};
-  if (req.query.status !== "all") query = { status: req.query.status };
+  if (req.query.orderId) {
+    query = {
+      orderId: {
+        $regex: req.query.orderId,
+        $options: "i",
+      },
+    };
+  }
+  
+  if (req.query.status !== "all") query.status = req.query.status;
 
+  console.log("query", query);
   const apiFeature = new APIFeatures(
     Order.find(query).populate("userId"),
     req.query
   );
 
   let orders = await apiFeature.query;
-  console.log("orders", orders);
+  // console.log("orders", orders);
   let filteredOrderCount = orders.length;
 
   apiFeature.pagination();
