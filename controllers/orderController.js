@@ -81,7 +81,7 @@ exports.getAll = async (req, res, next) => {
       req.query
     );  
 
-    let orders = await apiFeature.query;
+    const orders = await apiFeature.query;
     // const orders = await Order.find({ userId: req.userId });
 
     res.status(200).json({ orders });
