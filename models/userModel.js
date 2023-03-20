@@ -68,29 +68,3 @@ userSchema.methods.getJWTToken = function () {
 
 module.exports = mongoose.model("User", userSchema);
 
-/**
- * Add fields in userSchema
- * Error Handlings
- * connect mongo atlas database
- * create product category, subcategories
- * basic crud operation
- * {
- *  name:
- *  category: [ref]
- *  image:
- * desc:
- * }
- * populate
- * email validation
- * password encryption
- * getproduct by category and subcategory
- * test user
- *
- *
- * login
- * tables -
- * user - edit
- * product - edit, view, add, delete
- *
- *
- */
