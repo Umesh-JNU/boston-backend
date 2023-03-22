@@ -1,6 +1,4 @@
 const express = require("express");
-var ipgeoblock = require("node-ipgeoblock");
-var geoip = require("geoip-country");
 const cors = require("cors");
 const errorMiddleware = require("./middlewares/error");
 const dotenv = require("dotenv");
@@ -16,19 +14,6 @@ app.use(
     credentials: true,
   })
 );
-
-// var ip = "207.97.227.239";
-// var geo = geoip.lookup();
-// console.log("geo ", geo);
-// console.log("The IP is %s", geoip.pretty(ip));
-
-// app.use(
-//   ipgeoblock({
-//     geolite2: "./GeoLite2-Country.mmdb",
-//     allowedCountries: ["FR", "GB", "DE", "IN"],
-//   })
-// );
-
 
 app.get("/", (req, res, next) => res.json({ anc: "abc" }));
 
