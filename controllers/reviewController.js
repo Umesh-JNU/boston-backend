@@ -24,7 +24,7 @@ exports.addReview = catchAsyncError(async (req, res, next) => {
     rating,
     product,
     comment,
-    user: `${user.firstname} ${user.lastname}`,
+    user,
   });
 
   console.log("review", review);
@@ -35,7 +35,7 @@ exports.addReview = catchAsyncError(async (req, res, next) => {
 exports.getAllReview = catchAsyncError(async (req, res, next) => {
   const { product } = req.params;
 
-  const reviews = await reviewModel.find({ product });
+  const reviews = await reviewModel.find({ product }).populate('user');
 
   res.status(200).json({ reviews });
 });
@@ -51,7 +51,7 @@ exports.getReview = catchAsyncError(async (req, res, next) => {
 
   const review = await reviewModel.findOne({
     product,
-    user: `${user.firstname} ${user.lastname}`,
+    user: userId,
   });
   console.log("review", review);
 
