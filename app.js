@@ -25,6 +25,7 @@ const cartRoute = require("./routes/cartRoute");
 const orderRoute = require("./routes/orderRoute");
 const adminRoute = require("./routes/adminRoute");
 const promotionRoute = require('./routes/promotionRoute');
+const reviewRoute = require('./routes/reviewRoute');
 
 app.use("/api/user", userRoute);
 app.use("/api/product", productRoute);
@@ -34,6 +35,8 @@ app.use("/api/cart", cartRoute);
 app.use("/api/order", orderRoute);
 app.use("/api/admin", adminRoute);
 app.use("/api/promotion", promotionRoute);
+app.use("/api/review", reviewRoute);
+
 app.use(errorMiddleware);
 
 module.exports = app;
