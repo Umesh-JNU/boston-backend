@@ -62,14 +62,8 @@ const productSchema = new mongoose.Schema(
       default: true,
     },
     rating: {
-      value: {
-        type: Number,
-        default: 0,
-      },
-      num: {
-        type: Number,
-        default: 0,
-      },
+      type: Number,
+      default: 0,
     },
     category: {
       type: mongoose.Schema.Types.ObjectId,

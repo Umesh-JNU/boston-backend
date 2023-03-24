@@ -20,8 +20,9 @@ exports.addReview = catchAsyncError(async (req, res, next) => {
   const user = await userModel.findById(userId);
   if (!user) return next(new ErrorHandler("User not found", 404));
 
-  prod.rating.num = prod.rating.num + 1;
-  prod.rating.value = Math.round(prod.rating.value + rating) / prod.rating.num;
+  const num = await reviewModel.count({product});
+  const r = (prod.rating + rating) / (num + 1);
+  prod.rating = r.toFixed(1);
   await prod.save();
 
   const review = await reviewModel.create({
