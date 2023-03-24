@@ -16,7 +16,14 @@ exports.createOrder = async (req, res, next) => {
     };
   });
 
-  const { country, post_code, town, street, cartTotalAmount } = req.body;
+  var total = 0;
+  if (cart?.items.length > 0) {
+    cart?.items.forEach(({ product, quantity }) => {
+      total += product?.amount * quantity;
+    });
+  }
+
+  const { country, post_code, town, street } = req.body;
 
   const unique_id = uuid();
   const orderId = unique_id.slice(0, 6);
@@ -26,14 +33,14 @@ exports.createOrder = async (req, res, next) => {
   const newOrder = new Order({
     userId: req.userId,
     products: products,
-    amount: cartTotalAmount,
+    amount: total,
     address: {
       country,
       post_code,
       street,
       town,
     },
-    orderId: orderId,
+    orderId: '#'+orderId,
   });
 
   try {
