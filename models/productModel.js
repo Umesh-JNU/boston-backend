@@ -54,12 +54,22 @@ const productSchema = new mongoose.Schema(
     },
     amount: {
       type: Number,
-      required: [true, "Please enter the amount of product."]
-    }, 
+      required: [true, "Please enter the amount of product."],
+    },
     product_images: [{ type: String }],
     stock: {
       type: Boolean,
       default: true,
+    },
+    rating: {
+      value: {
+        type: Number,
+        default: 0,
+      },
+      num: {
+        type: Number,
+        default: 0,
+      },
     },
     category: {
       type: mongoose.Schema.Types.ObjectId,
