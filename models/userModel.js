@@ -34,7 +34,7 @@ const userSchema = new mongoose.Schema(
       minLength: [4, "Lastname should have more that 4 characters"],
     },
     telephone: {
-      type: String,
+      type: Number,
     },
     fax: {
       type: String,

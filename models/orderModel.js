@@ -38,6 +38,10 @@ const orderSchema = new Schema(
         type: String,
         required: true,
       },
+      telephone: {
+        type: Number,
+        required: true,
+      }
     },
     status: {
       type: String,
