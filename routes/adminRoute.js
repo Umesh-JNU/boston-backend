@@ -16,6 +16,7 @@ const {
   updatePromotion,
   deletePromotion,
 } = require("../controllers/promotionController");
+const { allReviews, deleteReview } = require("../controllers/reviewController");
 const {
   createSubCategory,
   updateSubCategory,
@@ -66,6 +67,9 @@ router
   .route("/product/:id")
   .put(auth, isAdmin, updateProduct)
   .delete(auth, isAdmin, deleteProduct);
+
+router.get("/review/all", auth, isAdmin, allReviews);
+router.delete("/review/:id", auth, isAdmin, deleteReview);
 
 router.post("/promotion/create", auth, isAdmin, createPromotion);
 router

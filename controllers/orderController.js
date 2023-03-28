@@ -3,12 +3,16 @@ const cartModel = require("../models/cartModel");
 const { v4: uuid } = require("uuid");
 const catchAsyncError = require("../utils/catchAsyncError");
 const APIFeatures = require("../utils/apiFeatures");
+const ErrorHandler = require("../utils/errorHandler")
 
 exports.createOrder = async (req, res, next) => {
   const cart = await cartModel
     .findOne({ user: req.userId })
     .populate("items.product");
 
+  if(cart.length <= 0) 
+    return next(new ErrorHandler("Order can't placed. Add product to cart.", 401));
+  
   const products = cart?.items?.map((i) => {
     return {
       quantity: i?.quantity,
@@ -83,7 +87,7 @@ exports.getAll = async (req, res, next) => {
     let query = { userId: req.userId };
     if (req.query.status !== "all") query.status = req.query.status;
 
-    const apiFeature = new APIFeatures(Order.find(query), req.query);
+    const apiFeature = new APIFeatures(Order.find(query).sort({createdAt: -1}), req.query);
 
     const orders = await apiFeature.query;
     // const orders = await Order.find({ userId: req.userId });
@@ -114,7 +118,7 @@ exports.deleteOrder = catchAsyncError(async (req, res, next) => {
 exports.getOrderById = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
   console.log("get order", id);
-  const order = await Order.findById(id).populate("userId");
+  const order = await Order.findById(id).sort({createdAt: -1}).populate("userId");
 
   if (!order) return next(new ErrorHandler("Order not found.", 404));
 
@@ -149,7 +153,7 @@ exports.getAllOrders = catchAsyncError(async (req, res, next) => {
 
   console.log("query", query);
   const apiFeature = new APIFeatures(
-    Order.find(query).populate("userId"),
+    Order.find(query).sort({createdAt: -1}).populate("userId"),
     req.query
   );
 

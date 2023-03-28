@@ -122,7 +122,7 @@ exports.adminLogin = catchAsyncError(async (req, res, next) => {
 exports.getAllUsers = catchAsyncError(async (req, res, next) => {
   const userCount = await userModel.countDocuments();
   console.log("userCount", userCount);
-  const apiFeature = new APIFeatures(userModel.find(), req.query).search();
+  const apiFeature = new APIFeatures(userModel.find().sort({createdAt: -1}), req.query).search('firstname');
 
   let users = await apiFeature.query;
   console.log('users', users);

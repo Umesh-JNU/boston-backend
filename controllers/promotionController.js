@@ -20,7 +20,7 @@ exports.createPromotion = catchAsyncError(async (req, res, next) => {
 });
 
 exports.getAllPromotion = catchAsyncError(async (req, res, next) => {
-  const promotions = await promotionModel.find().populate("product");
+  const promotions = await promotionModel.find().sort({createdAt: -1}).populate("product");
   res.status(200).json({ promotions });
 });
 

@@ -3,6 +3,7 @@ const reviewModel = require("../models/reviewModel");
 const userModel = require("../models/userModel");
 const {productModel} = require("../models/productModel");
 const ErrorHandler = require("../utils/errorHandler");
+const APIFeatures = require("../utils/apiFeatures");
 
 exports.addReview = catchAsyncError(async (req, res, next) => {
   console.log("add review", req.body, req.userId);
@@ -40,11 +41,19 @@ exports.addReview = catchAsyncError(async (req, res, next) => {
 exports.getAllReview = catchAsyncError(async (req, res, next) => {
   const { product } = req.params;
 
-  const reviews = await reviewModel.find({ product }).populate('user');
+  const reviews = await reviewModel.find({ product }).sort({createdAt: -1}).populate('user');
 
   res.status(200).json({ reviews });
 });
 
+exports.deleteReview = catchAsyncError(async (req, res, next) => {
+  const {id} = req.params;
+  const review = await reviewModel.findById(id);
+  if(!review) return next(new ErrorHandler("Review not found.", 404));
+
+  await review.remove();
+  res.status(200).json({message: "Review Deleted successfully.",})
+})
 exports.getReview = catchAsyncError(async (req, res, next) => {
   const { product } = req.params;
   console.log("product", product);
@@ -63,4 +72,28 @@ exports.getReview = catchAsyncError(async (req, res, next) => {
   if (!review) return next(new ErrorHandler("Review not found.", 404));
 
   res.status(200).json({ review });
+});
+
+exports.allReviews = catchAsyncError(async (req, res, next) => {
+  console.log("req.query", req.query);
+  const reviewCount = await reviewModel.countDocuments();
+  console.log("reviewCount", reviewCount);
+  const apiFeature = new APIFeatures(
+    reviewModel.find().sort({createAt: -1}).populate("product").populate('user'),
+    req.query
+  ).search('comment');
+
+  let reviews = await apiFeature.query;
+  console.log("reviews", reviews);
+  let filteredReviewCount = reviews.length;
+
+  if (req.query.resultPerPage && req.query.currentPage) {
+    apiFeature.pagination();
+
+    console.log("filteredReviewCount", filteredReviewCount);
+    reviews = await apiFeature.query.clone();
+  }
+
+  console.log("reviews1", reviews);
+  res.status(200).json({ reviews, reviewCount, filteredReviewCount });
 });

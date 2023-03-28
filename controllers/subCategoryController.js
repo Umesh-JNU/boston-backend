@@ -19,7 +19,7 @@ exports.createSubCategory = catchAsyncError(async (req, res, next) => {
 exports.getAllSubCategories = catchAsyncError(async (req, res, next) => {
   const subCategoryCount = await subCategoryModel.countDocuments();
   console.log("subCategoryCount", subCategoryCount);
-  const apiFeature = new APIFeatures(subCategoryModel.find().populate("category"), req.query).search();
+  const apiFeature = new APIFeatures(subCategoryModel.find().sort({createdAt: -1}).populate("category"), req.query).search('name');
 
   let subCategories = await apiFeature.query;
   console.log('subCategories', subCategories);

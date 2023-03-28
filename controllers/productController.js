@@ -15,9 +15,9 @@ exports.getAllProducts = catchAsyncError(async (req, res, next) => {
   const productCount = await productModel.countDocuments();
   console.log("productCount", productCount);
   const apiFeature = new APIFeatures(
-    productModel.find().populate("category").populate("sub_category"),
+    productModel.find().populate("category").populate("sub_category").sort({createdAt: -1}),
     req.query
-  ).search();
+  ).search('name');
 
   let products = await apiFeature.query;
   console.log("products", products);

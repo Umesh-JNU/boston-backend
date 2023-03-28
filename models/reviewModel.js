@@ -5,11 +5,12 @@ const reviewSchema = new mongoose.Schema(
     user: {
       type: mongoose.Schema.Types.ObjectId,
       required: [true, "User is required."],
-      ref: "User"
+      ref: "User",
     },
     product: {
       type: mongoose.Schema.Types.ObjectId,
       required: [true, "Product is not provided."],
+      ref: "Product",
     },
     rating: {
       type: Number,
@@ -19,6 +20,7 @@ const reviewSchema = new mongoose.Schema(
     comment: {
       type: String,
       required: [true, "Please write a comment."],
+      maxLength: [50, "Comment cannot exceed 50 characters"],
     },
   },
   { timestamps: true }
