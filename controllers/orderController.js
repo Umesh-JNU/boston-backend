@@ -3,13 +3,17 @@ const cartModel = require("../models/cartModel");
 const { v4: uuid } = require("uuid");
 const catchAsyncError = require("../utils/catchAsyncError");
 const APIFeatures = require("../utils/apiFeatures");
-const ErrorHandler = require("../utils/errorHandler")
+const ErrorHandler = require("../utils/errorHandler");
+const couponModel = require("../models/couponModel");
 
 exports.createOrder = async (req, res, next) => {
+  const userId = req.userId;
+
   const cart = await cartModel
-    .findOne({ user: req.userId })
+    .findOne({ user: userId })
     .populate("items.product");
 
+  
   if(cart.length <= 0) 
     return next(new ErrorHandler("Order can't placed. Add product to cart.", 401));
   
@@ -27,15 +31,28 @@ exports.createOrder = async (req, res, next) => {
     });
   }
 
-  const { country, post_code, town, street, telephone } = req.body;
+  const { country, post_code, town, street, telephone, coupon_code } = req.body;
 
   const unique_id = uuid();
   const orderId = unique_id.slice(0, 6);
 
   console.log("orderId ", orderId);
+  console.log('order create', req.body);
+  
+  if(coupon_code) {
+    const coupon = await couponModel.findOne({user: userId, _id: coupon_code});
+    console.log("coupon", coupon);
+    console.log({now: Date.now(), createdAt: coupon.createdAt, diff: Date.now() - coupon.createdAt})
+
+    if(Date.now() - coupon.createdAt <= 30*60*60*1000) {
+      total -= coupon.amount;
+      await coupon.remove();
+    }
+    else return next(new ErrorHandler("Coupon is expired.", 401));
+  }
 
   const newOrder = new Order({
-    userId: req.userId,
+    userId: userId,
     products: products,
     amount: total,
     address: {

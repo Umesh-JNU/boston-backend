@@ -2,11 +2,16 @@ const catchAsyncError = require("../utils/catchAsyncError");
 const cartModel = require("../models/cartModel");
 const ErrorHandler = require("../utils/errorHandler");
 const orderModel = require("../models/orderModel");
+const { productModel } = require("../models/productModel");
 
 exports.addItem = catchAsyncError(async (req, res, next) => {
   console.log("cart add", req.body);
   const { product, quantity } = req.body;
 
+  const isProduct = await productModel.findById(product);
+  if(!isProduct) 
+    return next(new ErrorHandler("Product not found", 404));
+  
   const cart = await cartModel.findOne({ user: req.userId });
 
   const isExist =

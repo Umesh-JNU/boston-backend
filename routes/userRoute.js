@@ -12,6 +12,7 @@ const {
   getProfile,
   updateProfile,
   updatePassword,
+  getMyCoupon,
 } = require("../controllers/userController");
 const { auth } = require("../middlewares/auth");
 const router = express.Router();
@@ -29,5 +30,7 @@ router
   .get(auth, getAddr)
   .put(auth, updateAddr)
   .delete(auth, deleteAddr);
+
+router.get("/coupons", auth, getMyCoupon);
 
 module.exports = router;

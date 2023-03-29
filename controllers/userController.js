@@ -1,6 +1,7 @@
 const express = require("express");
 const userModel = require("../models/userModel");
 const cartModel = require("../models/cartModel");
+const couponModel = require("../models/couponModel");
 const catchAsyncError = require("../utils/catchAsyncError");
 const ErrorHandler = require("../utils/errorHandler");
 const APIFeatures = require("../utils/apiFeatures");
@@ -17,14 +18,28 @@ const sendData = (user, statusCode, res) => {
 exports.register = catchAsyncError(async (req, res, next) => {
   console.log("user register", req.body);
 
-  const { firstname, lastname, email, password } = req.body;
+  const { firstname, lastname, email, password, refer_code } = req.body;
+
   const user = await userModel.create({ firstname, lastname, email, password });
+
+  if (refer_code) {
+    console.log(refer_code);
+    await couponModel.create({ user: refer_code });
+    await couponModel.create({ user: user._id });
+  }
 
   await cartModel.create({
     user: user._id,
     items: [],
   });
   sendData(user, 200, res);
+});
+
+exports.getMyCoupon = catchAsyncError(async (req, res, next) => {
+  console.log("my coupons", req.userId);
+  const userId = req.userId;
+  const coupons = await couponModel.find({ user: userId });
+  res.status(200).json({ coupons });
 });
 
 exports.login = catchAsyncError(async (req, res, next) => {
@@ -122,19 +137,22 @@ exports.adminLogin = catchAsyncError(async (req, res, next) => {
 exports.getAllUsers = catchAsyncError(async (req, res, next) => {
   const userCount = await userModel.countDocuments();
   console.log("userCount", userCount);
-  const apiFeature = new APIFeatures(userModel.find().sort({createdAt: -1}), req.query).search('firstname');
+  const apiFeature = new APIFeatures(
+    userModel.find().sort({ createdAt: -1 }),
+    req.query
+  ).search("firstname");
 
   let users = await apiFeature.query;
-  console.log('users', users);
+  console.log("users", users);
   let filteredUserCount = users.length;
-  if(req.query.resultPerPage && req.query.currentPage) {
+  if (req.query.resultPerPage && req.query.currentPage) {
     apiFeature.pagination();
 
-    console.log('filteredUserCount',filteredUserCount);
+    console.log("filteredUserCount", filteredUserCount);
     users = await apiFeature.query.clone();
   }
   console.log("users", users);
-  res.status(200).json({ users, userCount, filteredUserCount});
+  res.status(200).json({ users, userCount, filteredUserCount });
 });
 
 exports.deleteUser = catchAsyncError(async (req, res, next) => {
