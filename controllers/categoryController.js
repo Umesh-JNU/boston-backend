@@ -7,20 +7,27 @@ const APIFeatures = require("../utils/apiFeatures");
 const catchAsyncError = require("../utils/catchAsyncError");
 
 exports.createCategory = catchAsyncError(async (req, res, next) => {
-  const {name, description, category_image} = req.body;
-  const category = await categoryModel.create({name, description, category_image});
+  const { name, description, category_image } = req.body;
+  const category = await categoryModel.create({
+    name,
+    description,
+    category_image,
+  });
   res.status(200).json({ category });
 });
 
 exports.getAllCategories = catchAsyncError(async (req, res, next) => {
   const categoryCount = await categoryModel.countDocuments();
   console.log("categoryCount", categoryCount);
-  const apiFeature = new APIFeatures(categoryModel.find().sort({createdAt: -1}), req.query).search('name');
+  const apiFeature = new APIFeatures(
+    categoryModel.find().sort({ createdAt: -1 }),
+    req.query
+  ).search("name");
 
   let categories = await apiFeature.query;
   console.log("categories", categories);
   let filteredCategoryCount = categories.length;
-  if(req.query.resultPerPage && req.query.currentPage) {
+  if (req.query.resultPerPage && req.query.currentPage) {
     apiFeature.pagination();
 
     console.log("filteredCategoryCount", filteredCategoryCount);
@@ -49,6 +56,34 @@ exports.getSubCategory = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
   const subCategories = await subCategoryModel.find({ category: id });
   res.status(200).json({ subCategories });
+});
+
+exports.getAllSubCategory = catchAsyncError(async (req, res, next) => {
+  const categories = await subCategoryModel.aggregate([
+    {
+      $lookup: {
+        from: "categories",
+        localField: "category",
+        foreignField: "_id",
+        as: "category",
+      },
+    },
+    { $unwind: { path: "$category" } },
+    {
+      $group: {
+        _id: { name: "$category.name", cat_id: "$category._id" },
+        subCategories: { $push: "$$ROOT" },
+      },
+    },
+    {
+      $project: {
+        "subCategories.name": 1,
+        "subCategories._id": 1,
+      },
+    },
+  ]);
+  console.log(categories);
+  res.status(200).json({ categories });
 });
 
 exports.updateCategory = catchAsyncError(async (req, res, next) => {
