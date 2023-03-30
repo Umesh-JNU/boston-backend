@@ -16,7 +16,7 @@ exports.auth = async (req, res, next) => {
       req.headers.authorization,
       process.env.JWT_SECRET
     );
-    console.log(userId);
+    console.log({ userId });
 
     req.userId = userId;
 

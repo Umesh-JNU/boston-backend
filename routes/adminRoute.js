@@ -1,11 +1,16 @@
 const express = require("express");
-const { getStatistics } = require("../controllers/adminController");
+const { getStatistics, getAll } = require("../controllers/adminController");
 const {
   createCategory,
   deleteCategory,
   updateCategory,
 } = require("../controllers/categoryController");
-const { getAllOrders, deleteOrder, getOrderById, updateOrderStatus } = require("../controllers/orderController");
+const {
+  getAllOrders,
+  deleteOrder,
+  getOrderById,
+  updateOrderStatus,
+} = require("../controllers/orderController");
 const {
   createProduct,
   updateProduct,
@@ -33,8 +38,8 @@ const { auth, isAdmin } = require("../middlewares/auth");
 const { s3Uploadv2, upload, s3UploadMulti } = require("../utils/s3");
 const router = express.Router();
 
-
-router.get("/statistics/:time", getStatistics);
+router.get("/all", getAll);
+router.get("/statistics/:time", auth, isAdmin, getStatistics);
 router.post("/login", adminLogin);
 router.get("/user/all", auth, isAdmin, getAllUsers);
 router
@@ -76,7 +81,6 @@ router
   .route("/promotion/:id")
   .put(auth, isAdmin, updatePromotion)
   .delete(auth, isAdmin, deletePromotion);
-
 
 router.post("/image", upload.single("image"), async (req, res) => {
   try {
