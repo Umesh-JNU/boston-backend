@@ -33,7 +33,7 @@ const userSchema = new mongoose.Schema(
       maxLength: [30, "Lastname cannot exceed 30 characters"],
       minLength: [4, "Lastname should have more that 4 characters"],
     },
-    telephone: {
+    mobile_no: {
       type: Number,
     },
     fax: {

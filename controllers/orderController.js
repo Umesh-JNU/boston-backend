@@ -31,7 +31,7 @@ exports.createOrder = async (req, res, next) => {
     });
   }
 
-  const { country, post_code, town, street, telephone, coupon_code } = req.body;
+  const { country, post_code, town, street, mobile_no, coupon_code } = req.body;
 
   const unique_id = uuid();
   const orderId = unique_id.slice(0, 6);
@@ -60,7 +60,7 @@ exports.createOrder = async (req, res, next) => {
       post_code,
       street,
       town,
-      telephone
+      mobile_no
     },
     orderId: '#'+orderId,
   });

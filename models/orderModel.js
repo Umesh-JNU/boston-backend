@@ -38,7 +38,7 @@ const orderSchema = new Schema(
         type: String,
         required: true,
       },
-      telephone: {
+      mobile_no: {
         type: Number,
         required: true,
       }

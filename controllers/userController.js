@@ -75,11 +75,11 @@ exports.getProfile = catchAsyncError(async (req, res, next) => {
 });
 
 exports.updateProfile = catchAsyncError(async (req, res, next) => {
-  const { firstname, lastname, fax, telephone } = req.body;
+  const { firstname, lastname, fax, mobile_no } = req.body;
 
   const user = await userModel.findByIdAndUpdate(
     req.userId,
-    { firstname, lastname, fax, telephone },
+    { firstname, lastname, fax, mobile_no },
     {
       new: true,
       runValidators: true,
@@ -175,14 +175,14 @@ exports.deleteUser = catchAsyncError(async (req, res, next) => {
 exports.updateUser = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
   console.log("user update admin", id);
-  const { firstname, lastname, telephone, fax, role } = req.body;
+  const { firstname, lastname, mobile_no, fax, role } = req.body;
 
   const user = await userModel.findById(id);
   if (!user) return next(new ErrorHandler("User not found.", 404));
 
   user.firstname = firstname;
   user.lastname = lastname;
-  user.telephone = telephone;
+  user.mobile_no = mobile_no;
   user.fax = fax;
   user.role = role;
   await user.save();
