@@ -2,9 +2,12 @@ const express = require("express");
 const userModel = require("../models/userModel");
 const cartModel = require("../models/cartModel");
 const couponModel = require("../models/couponModel");
+const orderModel = require("../models/orderModel");
+const addressModel = require("../models/addressModel");
 const catchAsyncError = require("../utils/catchAsyncError");
 const ErrorHandler = require("../utils/errorHandler");
 const APIFeatures = require("../utils/apiFeatures");
+const reviewModel = require("../models/reviewModel");
 
 const sendData = (user, statusCode, res) => {
   const token = user.getJWTToken();
@@ -165,6 +168,10 @@ exports.deleteUser = catchAsyncError(async (req, res, next) => {
 
   const cart = await cartModel.findOne({ user: user._id });
   await cart.remove();
+  await orderModel.deleteMany({ userId: id });
+  await addressModel.deleteMany({ user: id });
+  await reviewModel.deleteMany({ user: id });
+  await couponModel.deleteMany({ user: id });
   await user.remove();
 
   res.status(200).json({
