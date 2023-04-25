@@ -58,31 +58,52 @@ exports.getSubCategory = catchAsyncError(async (req, res, next) => {
   res.status(200).json({ subCategories });
 });
 
+// exports.getAllSubCategory = catchAsyncError(async (req, res, next) => {
+//   const categories = await subCategoryModel.aggregate([
+//     {
+//       $lookup: {
+//         from: "categories",
+//         localField: "category",
+//         foreignField: "_id",
+//         as: "category",
+//       },
+//     },
+//     { $unwind: { path: "$category" } },
+//     {
+//       $group: {
+//         _id: { name: "$category.name", cat_id: "$category._id" },
+//         subCategories: { $push: "$$ROOT" },
+//       },
+//     },
+//     {
+//       $project: {
+//         "subCategories.name": 1,
+//         "subCategories._id": 1,
+//       },
+//     },
+//   ]);
+//   console.log(categories);
+//   res.status(200).json({ categories });
+// });
+
 exports.getAllSubCategory = catchAsyncError(async (req, res, next) => {
-  const categories = await subCategoryModel.aggregate([
-    {
-      $lookup: {
-        from: "categories",
-        localField: "category",
-        foreignField: "_id",
-        as: "category",
-      },
-    },
-    { $unwind: { path: "$category" } },
-    {
-      $group: {
-        _id: { name: "$category.name", cat_id: "$category._id" },
-        subCategories: { $push: "$$ROOT" },
-      },
-    },
-    {
-      $project: {
-        "subCategories.name": 1,
-        "subCategories._id": 1,
-      },
-    },
-  ]);
-  console.log(categories);
+  const category_list = await categoryModel.find();
+  const categories = await Promise.all(
+    category_list.map(async (category) => {
+      const subCategories = await subCategoryModel
+        .find({ category: category._id })
+        .select(["_id", "name"]);
+        
+      return {
+        _id: {
+          cat_id: category._id,
+          name: category.name,
+        },
+        subCategories,
+      };
+    })
+  );
+
   res.status(200).json({ categories });
 });
 

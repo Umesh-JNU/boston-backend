@@ -1,5 +1,10 @@
 const express = require("express");
-const { getStatistics, getAll } = require("../controllers/adminController");
+const {
+  getStatistics,
+  getAll,
+  postSingleImage,
+  postMultipleImages,
+} = require("../controllers/adminController");
 const {
   createCategory,
   deleteCategory,
@@ -82,46 +87,7 @@ router
   .put(auth, isAdmin, updatePromotion)
   .delete(auth, isAdmin, deletePromotion);
 
-router.post("/image", upload.single("image"), async (req, res) => {
-  try {
-    if (req.file) {
-      const results = await s3Uploadv2(req.file);
-      const location = results.Location && results.Location;
-      return res.status(201).json({
-        data: {
-          location,
-        },
-      });
-    } else {
-      return res.status(401).send({ error: { message: "Invalid Image" } });
-    }
-  } catch (error) {
-    console.error(error);
-    return res.status(500).send({ error: { message: "Server Error" } });
-  }
-});
-
-router.post("/multi-image", upload.array("image"), async (req, res) => {
-  try {
-    if (req.files) {
-      const results = await s3UploadMulti(req.files);
-      console.log(results);
-      let location = [];
-      results.filter((result) => {
-        location.push(result.Location);
-      });
-      return res.status(201).json({
-        data: {
-          location,
-        },
-      });
-    } else {
-      return res.status(401).send({ error: { message: "Invalid Image" } });
-    }
-  } catch (error) {
-    console.error(error);
-    return res.status(500).send({ error: { message: "Server Error" } });
-  }
-});
+router.post("/image", upload.single("image"), postSingleImage);
+router.post("/multi-image", upload.array("image"), postMultipleImages);
 
 module.exports = router;

@@ -37,6 +37,9 @@ app.use("/api/admin", adminRoute);
 app.use("/api/promotion", promotionRoute);
 app.use("/api/review", reviewRoute);
 
+app.all('*', async (req, res) => {
+  res.status(404).json({error:{message:"Not Found. Kindly Check the API path as well as request type"}})
+});
 app.use(errorMiddleware);
 
 module.exports = app;

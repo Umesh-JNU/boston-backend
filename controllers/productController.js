@@ -1,7 +1,6 @@
 const express = require("express");
 const { productModel, categoryModel } = require("../models/productModel");
 const reviewModel = require("../models/reviewModel");
-const promotionModel = require("../models/promotionModel");
 const APIFeatures = require("../utils/apiFeatures");
 const catchAsyncError = require("../utils/catchAsyncError");
 
@@ -17,13 +16,9 @@ exports.getAllProducts = catchAsyncError(async (req, res, next) => {
   const productCount = await productModel.countDocuments();
   console.log("productCount", productCount);
   const apiFeature = new APIFeatures(
-    productModel
-      .find()
-      .populate("category")
-      .populate("sub_category")
-      .sort({ createdAt: -1 }),
+    productModel.find().populate("category").populate("sub_category").sort({createdAt: -1}),
     req.query
-  ).search("name");
+  ).search('name');
 
   let products = await apiFeature.query;
   console.log("products", products);
@@ -84,8 +79,7 @@ exports.deleteProduct = catchAsyncError(async (req, res, next) => {
     return res.status(404).json({ message: "Product Not Found" });
   }
 
-  await promotionModel.deleteOne({product: product._id});
-  await reviewModel.deleteMany({ product });
+  await reviewModel.deleteMany({product});
   await product.remove();
 
   res.status(200).json({

@@ -6,6 +6,32 @@ const {
 } = require("../models/productModel");
 const userModel = require("../models/userModel");
 const catchAsyncError = require("../utils/catchAsyncError");
+const ErrorHandler = require("../utils/errorHandler");
+const { s3Uploadv2, s3UploadMulti } = require("../utils/s3");
+
+exports.postSingleImage = catchAsyncError(async (req, res, next) => {
+  const file = req.file;
+  if (!file) return next(new ErrorHandler("Invalid Image", 401));
+
+  const results = await s3Uploadv2(file);
+  const location = results.Location && results.Location;
+  return res.status(201).json({ data: { location } });
+});
+
+exports.postMultipleImages = catchAsyncError(async (req, res, next) => {
+  const files = req.files;
+  if (files) {
+    const results = await s3UploadMulti(files);
+    console.log(results);
+    let location = [];
+    results.filter((result) => {
+      location.push(result.Location);
+    });
+    return res.status(201).json({ data: { location } });
+  } else {
+    return next(new ErrorHandler("Invalid Image", 401));
+  }
+});
 
 exports.getAll = catchAsyncError(async (req, res, next) => {
   const { product } = req.query;
