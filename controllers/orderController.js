@@ -9,12 +9,11 @@ const couponModel = require("../models/couponModel");
 exports.createOrder = async (req, res, next) => {
   const userId = req.userId;
 
-  const cart = await cartModel
+  const cart = await (await cartModel
     .findOne({ user: userId })
-    .populate("items.product");
-
+    .populate("items.product")).populate("items.product.pid", "-subProduct");
   
-  if(cart.length <= 0) 
+  if(cart?.items.length <= 0) 
     return next(new ErrorHandler("Order can't placed. Add product to cart.", 401));
   
   const products = cart?.items?.map((i) => {

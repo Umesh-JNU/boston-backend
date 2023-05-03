@@ -1,13 +1,29 @@
 const express = require("express");
-const { productModel, categoryModel } = require("../models/productModel");
+const {
+  productModel,
+  categoryModel,
+  subProdModel,
+} = require("../models/productModel");
 const reviewModel = require("../models/reviewModel");
 const APIFeatures = require("../utils/apiFeatures");
 const catchAsyncError = require("../utils/catchAsyncError");
+const { v4: uuid } = require("uuid");
+const ErrorHandler = require("../utils/errorHandler");
 
 exports.createProduct = catchAsyncError(async (req, res, next) => {
+  console.log(req.body);
+  const { variant } = req.body;
+
   const product = await (
     await (await productModel.create(req.body)).populate("category")
   ).populate("sub_category");
+
+  for (let v in variant) {
+    const _v = await subProdModel.create({ ...variant[v], pid: product._id });
+    product.subProduct.push(_v._id);
+  }
+
+  await (await product.save()).populate("subProduct");
   res.status(200).json({ product });
 });
 
@@ -16,9 +32,14 @@ exports.getAllProducts = catchAsyncError(async (req, res, next) => {
   const productCount = await productModel.countDocuments();
   console.log("productCount", productCount);
   const apiFeature = new APIFeatures(
-    productModel.find().populate("category").populate("sub_category").sort({createdAt: -1}),
+    productModel
+      .find()
+      .populate("category")
+      .populate("sub_category")
+      .populate("subProduct")
+      .sort({ createdAt: -1 }),
     req.query
-  ).search('name');
+  ).search("name");
 
   let products = await apiFeature.query;
   console.log("products", products);
@@ -39,7 +60,11 @@ exports.getProduct = catchAsyncError(async (req, res, next) => {
   const product = await productModel
     .findById(req.params.id)
     .populate("category")
-    .populate("sub_category");
+    .populate("sub_category")
+    .populate("subProduct");
+
+  if (!product) return next(new ErrorHandler("Product not found", 404));
+
   res.status(200).json({ product });
 });
 
@@ -61,25 +86,32 @@ exports.getRecentProducts = catchAsyncError(async (req, res, next) => {
 });
 
 exports.updateProduct = catchAsyncError(async (req, res, next) => {
-  const product = await productModel
-    .findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-      useFindAndModify: false,
-    })
-    .populate("category")
-    .populate("sub_category");
+  console.log(req.body);
+  const { variant } = req.body;
+  const { id } = req.params;
+
+  const product = await productModel.findById(id);
+  if (!product) return next(new ErrorHandler("Product not found", 404));
+
+  // for (let v in variant) {
+  //   if(variant[v]._id)
+  //   const _v = await subProdModel.create({ ...variant[v], pid: product._id });
+  //   product.subProduct.push(_v._id);
+  // }
+
+  await (await product.save()).populate("subProduct");
+  res.status(200).json({ product });
+
   res.status(200).json({ product });
 });
 
 exports.deleteProduct = catchAsyncError(async (req, res, next) => {
   let product = await productModel.findById(req.params.id);
 
-  if (!product) {
-    return res.status(404).json({ message: "Product Not Found" });
-  }
+  if (!product) return next(new ErrorHandler("Product not found", 404));
 
-  await reviewModel.deleteMany({product});
+  await reviewModel.deleteMany({ product: product._id });
+  await subProdModel.deleteMany({ pid: product._id });
   await product.remove();
 
   res.status(200).json({

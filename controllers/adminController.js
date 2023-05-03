@@ -4,6 +4,7 @@ const {
   subCategoryModel,
   productModel,
 } = require("../models/productModel");
+const quantityModel = require("../models/quantityModel");
 const userModel = require("../models/userModel");
 const catchAsyncError = require("../utils/catchAsyncError");
 const ErrorHandler = require("../utils/errorHandler");
@@ -34,13 +35,13 @@ exports.postMultipleImages = catchAsyncError(async (req, res, next) => {
 });
 
 exports.getAll = catchAsyncError(async (req, res, next) => {
-  const { product } = req.query;
+  const { product, quantity } = req.query;
   const categories = await categoryModel.find();
   const subCategories = await subCategoryModel.find();
-  let products;
+  let products, quantities;
   if (product) products = await productModel.find();
-
-  res.status(200).json({ categories, subCategories, products });
+  if (quantity) quantities = await quantityModel.find();
+  res.status(200).json({ categories, subCategories, products, quantities });
 });
 
 exports.getStatistics = catchAsyncError(async (req, res, next) => {

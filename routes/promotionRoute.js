@@ -3,7 +3,6 @@ const {
   getAllPromotion,
   getPromotion,
 } = require("../controllers/promotionController");
-const { auth } = require("../middlewares/auth");
 const router = express.Router();
 
 router.get("/all", getAllPromotion);

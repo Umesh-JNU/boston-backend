@@ -2,18 +2,19 @@ const catchAsyncError = require("../utils/catchAsyncError");
 const cartModel = require("../models/cartModel");
 const ErrorHandler = require("../utils/errorHandler");
 const orderModel = require("../models/orderModel");
-const { productModel } = require("../models/productModel");
+const { subProdModel } = require("../models/productModel");
 
 exports.addItem = catchAsyncError(async (req, res, next) => {
   console.log("cart add", req.body);
   const { product, quantity } = req.body;
 
-  const isProduct = await productModel.findById(product);
+  const isProduct = await subProdModel.findById(product);
   if(!isProduct) 
     return next(new ErrorHandler("Product not found", 404));
   
   const cart = await cartModel.findOne({ user: req.userId });
 
+  console.log({isProduct})
   const isExist =
     cart?.items.filter((item) => item.product.toString() === product).length ===
     0;
@@ -30,8 +31,9 @@ exports.addItem = catchAsyncError(async (req, res, next) => {
     cart.items[index].quantity = quantity;
   }
 
-  await (await cart.save()).populate("items.product");
+  await (await (await cart.save()).populate("items.product")).populate("items.product.pid", "-subProduct");
 
+  console.log(cart, cart.items);
   var total = 0;
   if (cart?.items.length > 0) {
     cart?.items.forEach(({ product, quantity }) => {
@@ -62,7 +64,7 @@ exports.deleteItem = catchAsyncError(async (req, res, next) => {
 
   await cart?.items.splice(index, 1);
 
-  await (await cart.save()).populate("items.product");
+  await (await (await cart.save()).populate("items.product")).populate("items.product.pid", "-subProduct");
 
   var total = 0;
   if (cart.items.length > 0) {
@@ -119,7 +121,7 @@ exports.updateItem = catchAsyncError(async (req, res, next) => {
 
   console.log(index, cart.items[index]);
   cart.items[index].quantity = quantity;
-  await (await cart.save()).populate("items.product");
+  await (await (await cart.save()).populate("items.product")).populate("items.product.pid", "-subProduct");
 
   var total = 0;
   if (cart.items.length > 0) {
@@ -135,9 +137,9 @@ exports.updateItem = catchAsyncError(async (req, res, next) => {
 });
 
 exports.getItems = catchAsyncError(async (req, res, next) => {
-  const cart = await cartModel
+  const cart = await (await cartModel
     .findOne({ user: req.userId })
-    .populate("items.product");
+    .populate("items.product")).populate("items.product.pid", "-subProduct");
   console.log("cart", cart);
 
   var total = 0;

@@ -52,10 +52,6 @@ const productSchema = new mongoose.Schema(
       type: String,
       required: [true, "Please describe the product."],
     },
-    amount: {
-      type: Number,
-      required: [true, "Please enter the amount of product."],
-    },
     product_images: [{ type: String }],
     stock: {
       type: Boolean,
@@ -75,9 +71,33 @@ const productSchema = new mongoose.Schema(
       ref: "SubCategory",
       required: [true, "Please provide belonging subCategory."],
     },
+    subProduct: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "SubProduct",
+    }]
   },
   { timestamps: true }
 );
 const productModel = mongoose.model("Product", productSchema);
 
-module.exports = { categoryModel, subCategoryModel, productModel };
+const subProductSchema = new mongoose.Schema(
+  {
+    pid: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Product",
+      required: [true, "Please provide Product reference id"],
+    },
+    amount: {
+      type: Number,
+      required: [true, "Please enter the amount of product."],
+    },
+    qname: {
+      type: String,
+      required: [true, "Please provide a quantity type name"],
+    },
+  },
+  { timestamps: true }
+);
+const subProdModel = mongoose.model("SubProduct", subProductSchema);
+
+module.exports = { categoryModel, subCategoryModel, productModel, subProdModel };

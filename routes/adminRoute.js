@@ -39,6 +39,12 @@ const {
   updateUser,
   deleteUser,
 } = require("../controllers/userController");
+const {
+  updateQuantity,
+  deleteQuantity,
+  createQuantity,
+} = require("../controllers/quantityController");
+
 const { auth, isAdmin } = require("../middlewares/auth");
 const { s3Uploadv2, upload, s3UploadMulti } = require("../utils/s3");
 const router = express.Router();
@@ -86,6 +92,14 @@ router
   .route("/promotion/:id")
   .put(auth, isAdmin, updatePromotion)
   .delete(auth, isAdmin, deletePromotion);
+
+router.post("/quantity/create", auth, isAdmin, createQuantity);
+router
+  .route("/quantity/:id")
+  .put(auth, isAdmin, updateQuantity)
+  .delete(auth, isAdmin, deleteQuantity);
+
+module.exports = router;
 
 router.post("/image", upload.single("image"), postSingleImage);
 router.post("/multi-image", upload.array("image"), postMultipleImages);
