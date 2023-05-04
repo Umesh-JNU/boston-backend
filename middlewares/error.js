@@ -2,6 +2,7 @@ const multer = require("multer");
 const ErrorHandler = require("../utils/errorHandler");
 
 module.exports = (err, req, res, next) => {
+  console.log(err);
   err.message = err.message || "Internal Server Error";
 
   if (err instanceof multer.MulterError) {
@@ -24,11 +25,17 @@ module.exports = (err, req, res, next) => {
   }
 
   if (err.name === "ValidationError") {
-    let errors = Object.values(err.errors).map((el) =>
-      JSON.stringify({
-        [el.path]: { required: el.kind, provided: el.valueType },
-      })
-    );
+    let errors = Object.values(err.errors).map((el) => {
+      console.log("properties", el.properties)
+      let e;
+      if (el.kind === "required") e = err.message;
+      else if (["minlength", "maxlength", "min", "max"].includes(el.kind))
+        e = el.properties.message;
+      else if (["string", "Number"].includes(el.kind))
+        e = `Required ${el.kind} type value, provided ${el.valueType}`;
+      else e = err.message;
+      return JSON.stringify({ [el.path]: e });
+    });
 
     const msg = `Validation Failed. ${errors.join(" ")}`;
     err = new ErrorHandler(msg, 400);
