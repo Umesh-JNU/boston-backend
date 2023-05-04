@@ -15,6 +15,10 @@ const orderSchema = new Schema(
           type: Number,
           default: 1,
         },
+        parent_prod: {
+          type: Object,
+          required: true,
+        }
       },
     ],
     amount: {

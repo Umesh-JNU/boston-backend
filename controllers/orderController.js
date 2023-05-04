@@ -13,13 +13,16 @@ exports.createOrder = async (req, res, next) => {
     .findOne({ user: userId })
     .populate("items.product")).populate("items.product.pid", "-subProduct");
   
+  console.log(cart.items[0].product);
   if(cart?.items.length <= 0) 
     return next(new ErrorHandler("Order can't placed. Add product to cart.", 401));
   
   const products = cart?.items?.map((i) => {
+    console.log(i?.product)
     return {
       quantity: i?.quantity,
       product: { ...i?.product?._doc },
+      parent_prod: {...i?.product?.pid?._doc}
     };
   });
 
