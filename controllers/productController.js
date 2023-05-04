@@ -93,15 +93,14 @@ exports.updateProduct = catchAsyncError(async (req, res, next) => {
   const product = await productModel.findById(id);
   if (!product) return next(new ErrorHandler("Product not found", 404));
 
-  // for (let v in variant) {
-  //   if(variant[v]._id)
-  //   const _v = await subProdModel.create({ ...variant[v], pid: product._id });
-  //   product.subProduct.push(_v._id);
-  // }
+  await subProdModel.deleteMany({pid: product._id});
+  product.subProduct = [];
+  for (let v in variant) {
+    const _v = await subProdModel.create({ ...variant[v], pid: product._id });
+    product.subProduct.push(_v._id);
+  }
 
   await (await product.save()).populate("subProduct");
-  res.status(200).json({ product });
-
   res.status(200).json({ product });
 });
 

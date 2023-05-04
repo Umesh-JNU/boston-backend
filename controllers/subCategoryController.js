@@ -52,7 +52,7 @@ exports.getAllProducts = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
   const products = await productModel
     .find({ sub_category: id })
-    .populate("category");
+    .populate("category").populate("subProduct");
 
   res.status(200).json({ products });
 });
