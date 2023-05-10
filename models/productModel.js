@@ -145,6 +145,8 @@ const aggregate = async (match) => {
         category: { $first: "$category" },
         sub_category: { $first: "$sub_category" },
         subProducts: { $push: "$subProducts" },
+        createdAt: {$first: "$createdAt"},
+        updatedAt: {$first: "$updatedAt"}
       },
     },
   ]);
