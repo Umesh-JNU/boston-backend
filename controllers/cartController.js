@@ -12,20 +12,18 @@ exports.addItem = catchAsyncError(async (req, res, next) => {
   if (!isProduct)
     return next(new ErrorHandler("Product not found", 404));
 
-  const cart = await cartModel.findOne({ user: req.userId });
+  let cart = await cartModel.findOne({ user: req.userId });
   if (!cart)
     return next(new ErrorHandler("Cart not found", 404));
 
   console.log({ isProduct })
-  const isExist =
-    cart?.items.filter((item) => item.product.toString() === product).length ===
-    0;
+  const isExist = cart.items.filter((item) => item.product.toString() === product).length === 0;
 
   // console.log(isExist);
   if (isExist) {
-    cart?.items.push({ product, quantity });
+    cart.items.push({ product, quantity });
   } else {
-    const index = cart?.items
+    const index = cart.items
       .map((item) => item.product.toString())
       .indexOf(product);
 
@@ -33,20 +31,27 @@ exports.addItem = catchAsyncError(async (req, res, next) => {
     cart.items[index].quantity = quantity;
   }
 
-  await (await (await cart.save()).populate("items.product")).populate("items.product.pid", "-subProduct");
+  await (await cart.save()).populate({
+    path: "items.product",
+    populate: { path: "pid", select: "-subProduct" }
+  });
 
   console.log(cart, cart.items);
   var total = 0;
-  if (cart?.items.length > 0) {
-    cart?.items.forEach(({ product, quantity }) => {
+  const inSalePrice = [];
+  if (cart.items.length > 0) {
+    cart.items.forEach(({ product, quantity }) => {
       const amt = product?.amount;
-      const discount = product?.pid?.sale;
-      total += amt * (1 - discount * 0.01) * quantity;
+      const discount = product.pid?.sale;
+      const updatedAmount = amt * (1 - discount * 0.01)
+      total += updatedAmount * quantity;
+      if (updatedAmount !== amt) inSalePrice.push({id: product._id, updatedAmount})
     });
   }
 
   res.status(200).json({
     cartItems: cart.items,
+    inSalePrice,
     total,
   });
 });
@@ -57,30 +62,34 @@ exports.deleteItem = catchAsyncError(async (req, res, next) => {
   const cart = await cartModel.findOne({ user: req.userId });
   console.log("cart", cart);
 
-  console.log("cart items", cart?.items);
+  console.log("cart items", cart.items);
   const isExist =
     cart.items.filter((item) => item.product.toString() === id).length === 0;
 
   if (isExist)
     return next(new ErrorHandler("Product is not found in the cart.", 401));
 
-  const index = cart?.items.map((item) => item.product.toString()).indexOf(id);
+  const index = cart.items.map((item) => item.product.toString()).indexOf(id);
 
-  await cart?.items.splice(index, 1);
+  await cart.items.splice(index, 1);
 
   await (await (await cart.save()).populate("items.product")).populate("items.product.pid", "-subProduct");
 
   var total = 0;
+  const inSalePrice = [];
   if (cart.items.length > 0) {
-    cart?.items.forEach(({ product, quantity }) => {
+    cart.items.forEach(({ product, quantity }) => {
       const amt = product?.amount;
-      const discount = product?.pid?.sale;
-      total += amt * (1 - discount * 0.01) * quantity;
+      const discount = product.pid?.sale;
+      const updatedAmount = amt * (1 - discount * 0.01)
+      total += updatedAmount * quantity;
+      if (updatedAmount !== amt) inSalePrice.push({id: product._id, updatedAmount})
     });
   }
 
   res.status(200).json({
     cartItems: cart.items,
+    inSalePrice,
     total,
   });
 });
@@ -130,16 +139,20 @@ exports.updateItem = catchAsyncError(async (req, res, next) => {
   await (await (await cart.save()).populate("items.product")).populate("items.product.pid", "-subProduct");
 
   var total = 0;
+  const inSalePrice = [];
   if (cart.items.length > 0) {
     cart.items.forEach(({ product, quantity }) => {
       const amt = product?.amount;
-      const discount = product?.pid?.sale;
-      total += amt * (1 - discount * 0.01) * quantity;
+      const discount = product.pid?.sale;
+      const updatedAmount = amt * (1 - discount * 0.01)
+      total += updatedAmount * quantity;
+      if (updatedAmount !== amt) inSalePrice.push({id: product._id, updatedAmount})
     });
   }
 
   res.status(200).json({
     cartItems: cart.items,
+    inSalePrice,
     total,
   });
 });
@@ -151,16 +164,20 @@ exports.getItems = catchAsyncError(async (req, res, next) => {
   console.log("cart", cart);
 
   var total = 0;
-  if (cart?.items.length > 0) {
-    cart?.items.forEach(({ product, quantity }) => {
+  const inSalePrice = [];
+  if (cart.items.length > 0) {
+    cart.items.forEach(({ product, quantity }) => {
       const amt = product?.amount;
-      const discount = product?.pid?.sale;
-      total += amt * (1 - discount * 0.01) * quantity;
+      const discount = product.pid?.sale;
+      const updatedAmount = amt * (1 - discount * 0.01)
+      total += updatedAmount * quantity;
+      if (updatedAmount !== amt) inSalePrice.push({id: product._id, updatedAmount})
     });
   }
 
   res.status(200).json({
     cartItems: cart.items,
+    inSalePrice,
     total,
   });
 });

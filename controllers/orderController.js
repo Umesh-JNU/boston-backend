@@ -27,12 +27,14 @@ exports.createOrder = catchAsyncError(async (req, res, next) => {
   });
 
   var total = 0;
-  if (cart?.items.length > 0) {
-    cart?.items.forEach(({ product, quantity }) => {
-      console.log({product});
+  // const inSalePrice = [];
+  if (cart.items.length > 0) {
+    cart.items.forEach(({ product, quantity }) => {
       const amt = product?.amount;
-      const discount = product?.pid?.sale;
-      total += amt * (1 - discount * 0.01) * quantity;
+      const discount = product.pid?.sale;
+      const updatedAmount = amt * (1 - discount * 0.01)
+      total += updatedAmount * quantity;
+      // inSalePrice.push({id: product._id, updatedAmount})
     });
   }
 
