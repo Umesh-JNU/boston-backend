@@ -47,6 +47,7 @@ const {
 
 const { auth, isAdmin } = require("../middlewares/auth");
 const { s3Uploadv2, upload, s3UploadMulti } = require("../utils/s3");
+const { createSale, getAllSale, getSale } = require("../controllers/saleController");
 const router = express.Router();
 
 router.get("/all", getAll);
@@ -99,7 +100,9 @@ router
   .put(auth, isAdmin, updateQuantity)
   .delete(auth, isAdmin, deleteQuantity);
 
-module.exports = router;
+router.post("/sale/create", auth, isAdmin, createSale);
+router.get("/sale/all", auth, isAdmin, getAllSale);
+router.get("/sale/:id", auth, isAdmin, getSale);
 
 router.post("/image", upload.single("image"), postSingleImage);
 router.post("/multi-image", upload.array("image"), postMultipleImages);

@@ -1,7 +1,8 @@
+const mongoose = require("mongoose");
 const {
   categoryModel,
   subCategoryModel,
-  productModel,
+  aggregate,
 } = require("../models/productModel");
 const APIFeatures = require("../utils/apiFeatures");
 const catchAsyncError = require("../utils/catchAsyncError");
@@ -45,70 +46,6 @@ exports.getCategory = catchAsyncError(async (req, res, next) => {
   res.status(200).json({ category });
 });
 
-exports.getAllProducts = catchAsyncError(async (req, res, next) => {
-  const { id } = req.params;
-  const products = await productModel
-    .find({ category: id })
-    .populate("sub_category").populate("subProduct");
-
-  res.status(200).json({ products });
-});
-
-exports.getSubCategory = catchAsyncError(async (req, res, next) => {
-  const { id } = req.params;
-  const subCategories = await subCategoryModel.find({ category: id });
-  res.status(200).json({ subCategories });
-});
-
-// exports.getAllSubCategory = catchAsyncError(async (req, res, next) => {
-//   const categories = await subCategoryModel.aggregate([
-//     {
-//       $lookup: {
-//         from: "categories",
-//         localField: "category",
-//         foreignField: "_id",
-//         as: "category",
-//       },
-//     },
-//     { $unwind: { path: "$category" } },
-//     {
-//       $group: {
-//         _id: { name: "$category.name", cat_id: "$category._id" },
-//         subCategories: { $push: "$$ROOT" },
-//       },
-//     },
-//     {
-//       $project: {
-//         "subCategories.name": 1,
-//         "subCategories._id": 1,
-//       },
-//     },
-//   ]);
-//   console.log(categories);
-//   res.status(200).json({ categories });
-// });
-
-exports.getAllSubCategory = catchAsyncError(async (req, res, next) => {
-  const category_list = await categoryModel.find();
-  const categories = await Promise.all(
-    category_list.map(async (category) => {
-      const subCategories = await subCategoryModel
-        .find({ category: category._id })
-        .select(["_id", "name"]);
-
-      return {
-        _id: {
-          cat_id: category._id,
-          name: category.name,
-        },
-        subCategories,
-      };
-    })
-  );
-
-  res.status(200).json({ categories });
-});
-
 exports.updateCategory = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
   const category = await categoryModel.findByIdAndUpdate(id, req.body, {
@@ -131,4 +68,40 @@ exports.deleteCategory = catchAsyncError(async (req, res, next) => {
     success: true,
     message: "Category Deleted successfully.",
   });
+});
+
+exports.getAllProducts = catchAsyncError(async (req, res, next) => {
+  const { id } = req.params;
+  let products;
+  if (id === "64407ccb7d5153dc445477d8") products = await aggregate({ sale: { $gt: 0 } });
+  else products = await aggregate({ category: mongoose.Types.ObjectId(id) });
+
+  res.status(200).json({ products });
+});
+
+exports.getSubCategory = catchAsyncError(async (req, res, next) => {
+  const { id } = req.params;
+  const subCategories = await subCategoryModel.find({ category: id });
+  res.status(200).json({ subCategories });
+});
+
+exports.getAllSubCategory = catchAsyncError(async (req, res, next) => {
+  const category_list = await categoryModel.find();
+  const categories = await Promise.all(
+    category_list.map(async (category) => {
+      const subCategories = await subCategoryModel
+        .find({ category: category._id })
+        .select(["_id", "name"]);
+
+      return {
+        _id: {
+          cat_id: category._id,
+          name: category.name,
+        },
+        subCategories,
+      };
+    })
+  );
+
+  res.status(200).json({ categories });
 });

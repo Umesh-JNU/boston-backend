@@ -1,5 +1,5 @@
-const express = require("express");
-const { subCategoryModel, productModel } = require("../models/productModel");
+const mongoose = require("mongoose"); 
+const { subCategoryModel, aggregate } = require("../models/productModel");
 const APIFeatures = require("../utils/apiFeatures");
 const catchAsyncError = require("../utils/catchAsyncError");
 const ErrorHandler = require("../utils/errorHandler");
@@ -48,15 +48,6 @@ exports.getSubCategory = catchAsyncError(async (req, res, next) => {
   res.status(200).json({ subCategory });
 });
 
-exports.getAllProducts = catchAsyncError(async (req, res, next) => {
-  const { id } = req.params;
-  const products = await productModel
-    .find({ sub_category: id })
-    .populate("category").populate("subProduct");
-
-  res.status(200).json({ products });
-});
-
 exports.updateSubCategory = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
   const subCategory = await subCategoryModel
@@ -83,3 +74,12 @@ exports.deleteSubCategory = catchAsyncError(async (req, res, next) => {
     message: "Sub-category Deleted successfully.",
   });
 });
+
+exports.getAllProducts = catchAsyncError(async (req, res, next) => {
+  const { id } = req.params;
+  const products = await aggregate({ sub_category: mongoose.Types.ObjectId(id) });
+
+  res.status(200).json({ products });
+});
+
+

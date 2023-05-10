@@ -53,14 +53,9 @@ const productSchema = new mongoose.Schema(
       required: [true, "Please describe the product."],
     },
     product_images: [{ type: String }],
-    stock: {
-      type: Boolean,
-      default: true,
-    },
-    rating: {
-      type: Number,
-      default: 0,
-    },
+    stock: { type: Boolean, default: true },
+    rating: { type: Number, default: 0 },
+    sale: { type: Number, default: 0 },
     category: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category",
@@ -100,4 +95,64 @@ const subProductSchema = new mongoose.Schema(
 );
 const subProdModel = mongoose.model("SubProduct", subProductSchema);
 
-module.exports = { categoryModel, subCategoryModel, productModel, subProdModel };
+const aggregate = async (match) => {
+  console.log(match);
+  return await productModel.aggregate([
+    { $match: match },
+    {
+      $lookup: {
+        from: "categories",
+        localField: "category",
+        foreignField: "_id",
+        as: "category",
+      }
+    },
+    { $unwind: "$category" },
+    {
+      $lookup: {
+        from: "subcategories",
+        localField: "sub_category",
+        foreignField: "_id",
+        as: "sub_category",
+      }
+    },
+    { $unwind: "$sub_category" },
+    {
+      $lookup: {
+        from: "subproducts",
+        localField: "subProduct",
+        foreignField: "_id",
+        as: "subProducts",
+      },
+    },
+    { $unwind: "$subProducts" },
+    {
+      $addFields: {
+        "subProducts.updatedAmount": {
+          $subtract: ["$subProducts.amount", { $multiply: [0.01, "$subProducts.amount", "$sale",] }],
+        },
+      },
+    },
+    {
+      $group: {
+        _id: "$_id",
+        name: { $first: "$name" },
+        description: { $first: "$description" },
+        product_images: { $first: "$product_images" },
+        stock: { $first: "$stock" },
+        rating: { $first: "$rating" },
+        sale: { $first: "$sale" },
+        category: { $first: "$category" },
+        sub_category: { $first: "$sub_category" },
+        subProducts: { $push: "$subProducts" },
+      },
+    },
+  ]);
+}
+module.exports = {
+  aggregate,
+  categoryModel,
+  subCategoryModel,
+  productModel,
+  subProdModel,
+};

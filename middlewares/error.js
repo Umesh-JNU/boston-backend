@@ -28,7 +28,7 @@ module.exports = (err, req, res, next) => {
     let errors = Object.values(err.errors).map((el) => {
       console.log("properties", el.properties)
       let e;
-      if (el.kind === "required") e = err.message;
+      if (el.kind === "required") e = el.properties ? el.properties.message : err.message;
       else if (["minlength", "maxlength", "min", "max"].includes(el.kind))
         e = el.properties.message;
       else if (["string", "Number"].includes(el.kind))

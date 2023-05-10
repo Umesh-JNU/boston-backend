@@ -3,6 +3,7 @@ const {
   productModel,
   categoryModel,
   subProdModel,
+  aggregate,
 } = require("../models/productModel");
 const reviewModel = require("../models/reviewModel");
 const APIFeatures = require("../utils/apiFeatures");
@@ -68,32 +69,21 @@ exports.getProduct = catchAsyncError(async (req, res, next) => {
   res.status(200).json({ product });
 });
 
-exports.getRecentProducts = catchAsyncError(async (req, res, next) => {
-  const products = await productModel
-    .findById(req.params.id)
-    .populate("category");
-  // .populate("sub_category");
 
-  console.log(req.params.id);
-
-  console.log("prods ", products.category?._id.toString());
-
-  const recentProducts = await productModel
-    .find({ category: products.category?._id.toString() })
-    .populate("sub_category");
-
-  res.status(200).json({ recentProducts });
-});
 
 exports.updateProduct = catchAsyncError(async (req, res, next) => {
   console.log(req.body);
   const { variant } = req.body;
   const { id } = req.params;
 
-  const product = await productModel.findById(id);
+  const product = await productModel.findByIdAndUpdate(id, req.body, {
+    new: true,
+    runValidators: true,
+    useFindAndModify: false,
+  }).populate("category").populate("sub_category");
   if (!product) return next(new ErrorHandler("Product not found", 404));
 
-  await subProdModel.deleteMany({pid: product._id});
+  await subProdModel.deleteMany({ pid: product._id });
   product.subProduct = [];
   for (let v in variant) {
     const _v = await subProdModel.create({ ...variant[v], pid: product._id });

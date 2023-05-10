@@ -24,6 +24,7 @@ const orderSchema = new Schema(
     amount: {
       type: Number,
       required: true,
+      min: [60, "Order can only be placed for amount at least 60"]
     },
     address: {
       country: {
