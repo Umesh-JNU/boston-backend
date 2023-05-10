@@ -6,30 +6,33 @@ const APIFeatures = require("../utils/apiFeatures");
 const ErrorHandler = require("../utils/errorHandler");
 const couponModel = require("../models/couponModel");
 
-exports.createOrder = async (req, res, next) => {
+exports.createOrder = catchAsyncError(async (req, res, next) => {
   const userId = req.userId;
 
   const cart = await (await cartModel
     .findOne({ user: userId })
     .populate("items.product")).populate("items.product.pid", "-subProduct");
-  
+
   console.log(cart.items[0].product);
-  if(cart?.items.length <= 0) 
+  if (cart?.items.length <= 0)
     return next(new ErrorHandler("Order can't placed. Add product to cart.", 401));
-  
+
   const products = cart?.items?.map((i) => {
     console.log(i?.product)
     return {
       quantity: i?.quantity,
       product: { ...i?.product?._doc },
-      parent_prod: {...i?.product?.pid?._doc}
+      parent_prod: { ...i?.product?.pid?._doc }
     };
   });
 
   var total = 0;
   if (cart?.items.length > 0) {
     cart?.items.forEach(({ product, quantity }) => {
-      total += product?.amount * quantity;
+      console.log({product});
+      const amt = product?.amount;
+      const discount = product?.pid?.sale;
+      total += amt * (1 - discount * 0.01) * quantity;
     });
   }
 
@@ -40,13 +43,13 @@ exports.createOrder = async (req, res, next) => {
 
   console.log("orderId ", orderId);
   console.log('order create', req.body);
-  
-  if(coupon_code) {
-    const coupon = await couponModel.findOne({user: userId, _id: coupon_code});
-    console.log("coupon", coupon);
-    console.log({now: Date.now(), createdAt: coupon.createdAt, diff: Date.now() - coupon.createdAt})
 
-    if(Date.now() - coupon.createdAt <= 30*60*60*1000) {
+  if (coupon_code) {
+    const coupon = await couponModel.findOne({ user: userId, _id: coupon_code });
+    console.log("coupon", coupon);
+    console.log({ now: Date.now(), createdAt: coupon.createdAt, diff: Date.now() - coupon.createdAt })
+
+    if (Date.now() - coupon.createdAt <= 30 * 60 * 60 * 1000) {
       total -= coupon.amount;
       await coupon.remove();
     }
@@ -64,19 +67,14 @@ exports.createOrder = async (req, res, next) => {
       town,
       mobile_no
     },
-    orderId: '#'+orderId,
+    orderId: '#' + orderId,
   });
 
-  try {
-    const savedOrder = await newOrder.save();
+  const savedOrder = await newOrder.save();
+  await cartModel.updateOne({ user: req.userId }, { $set: { items: [] } });
 
-    await cartModel.updateOne({ user: req.userId }, { $set: { items: [] } });
-
-    res.status(200).json({ message: "Order created!", savedOrder });
-  } catch (err) {
-    res.status(500).json(err);
-  }
-};
+  res.status(200).json({ message: "Order created!", savedOrder });
+});
 
 exports.getOrder = async (req, res, next) => {
   try {
@@ -107,7 +105,7 @@ exports.getAll = async (req, res, next) => {
     let query = { userId: req.userId };
     if (req.query.status !== "all") query.status = req.query.status;
 
-    const apiFeature = new APIFeatures(Order.find(query).sort({createdAt: -1}), req.query);
+    const apiFeature = new APIFeatures(Order.find(query).sort({ createdAt: -1 }), req.query);
 
     const orders = await apiFeature.query;
     // const orders = await Order.find({ userId: req.userId });
@@ -138,7 +136,7 @@ exports.deleteOrder = catchAsyncError(async (req, res, next) => {
 exports.getOrderById = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
   console.log("get order", id);
-  const order = await Order.findById(id).sort({createdAt: -1}).populate("userId");
+  const order = await Order.findById(id).sort({ createdAt: -1 }).populate("userId");
 
   if (!order) return next(new ErrorHandler("Order not found.", 404));
 
@@ -168,12 +166,12 @@ exports.getAllOrders = catchAsyncError(async (req, res, next) => {
       },
     };
   }
-  
+
   if (req.query.status !== "all") query.status = req.query.status;
 
   console.log("query", query);
   const apiFeature = new APIFeatures(
-    Order.find(query).sort({createdAt: -1}).populate("userId"),
+    Order.find(query).sort({ createdAt: -1 }).populate("userId"),
     req.query
   );
 

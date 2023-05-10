@@ -1,14 +1,8 @@
-const express = require("express");
-const {
-  productModel,
-  categoryModel,
-  subProdModel,
-  aggregate,
-} = require("../models/productModel");
+const mongoose = require("mongoose");
+const { productModel, subProdModel, aggregate } = require("../models/productModel");
 const reviewModel = require("../models/reviewModel");
 const APIFeatures = require("../utils/apiFeatures");
 const catchAsyncError = require("../utils/catchAsyncError");
-const { v4: uuid } = require("uuid");
 const ErrorHandler = require("../utils/errorHandler");
 
 exports.createProduct = catchAsyncError(async (req, res, next) => {
@@ -58,18 +52,12 @@ exports.getAllProducts = catchAsyncError(async (req, res, next) => {
 });
 
 exports.getProduct = catchAsyncError(async (req, res, next) => {
-  const product = await productModel
-    .findById(req.params.id)
-    .populate("category")
-    .populate("sub_category")
-    .populate("subProduct");
+  const { id } = req.params;
+  const products = await aggregate({ _id: mongoose.Types.ObjectId(id) });
+  if (products.length === 0) return next(new ErrorHandler("Product not found", 404));
 
-  if (!product) return next(new ErrorHandler("Product not found", 404));
-
-  res.status(200).json({ product });
+  res.status(200).json({ product: products[0] });
 });
-
-
 
 exports.updateProduct = catchAsyncError(async (req, res, next) => {
   console.log(req.body);

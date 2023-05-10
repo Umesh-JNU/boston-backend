@@ -1,6 +1,6 @@
 const catchAsyncError = require("../utils/catchAsyncError");
-const cartModel = require("../models/cartModel");
 const ErrorHandler = require("../utils/errorHandler");
+const cartModel = require("../models/cartModel");
 const orderModel = require("../models/orderModel");
 const { subProdModel } = require("../models/productModel");
 
@@ -9,12 +9,14 @@ exports.addItem = catchAsyncError(async (req, res, next) => {
   const { product, quantity } = req.body;
 
   const isProduct = await subProdModel.findById(product);
-  if(!isProduct) 
+  if (!isProduct)
     return next(new ErrorHandler("Product not found", 404));
-  
-  const cart = await cartModel.findOne({ user: req.userId });
 
-  console.log({isProduct})
+  const cart = await cartModel.findOne({ user: req.userId });
+  if (!cart)
+    return next(new ErrorHandler("Cart not found", 404));
+
+  console.log({ isProduct })
   const isExist =
     cart?.items.filter((item) => item.product.toString() === product).length ===
     0;
@@ -37,7 +39,9 @@ exports.addItem = catchAsyncError(async (req, res, next) => {
   var total = 0;
   if (cart?.items.length > 0) {
     cart?.items.forEach(({ product, quantity }) => {
-      total += product?.amount * quantity;
+      const amt = product?.amount;
+      const discount = product?.pid?.sale;
+      total += amt * (1 - discount * 0.01) * quantity;
     });
   }
 
@@ -69,7 +73,9 @@ exports.deleteItem = catchAsyncError(async (req, res, next) => {
   var total = 0;
   if (cart.items.length > 0) {
     cart?.items.forEach(({ product, quantity }) => {
-      total += product?.amount * quantity;
+      const amt = product?.amount;
+      const discount = product?.pid?.sale;
+      total += amt * (1 - discount * 0.01) * quantity;
     });
   }
 
@@ -126,7 +132,9 @@ exports.updateItem = catchAsyncError(async (req, res, next) => {
   var total = 0;
   if (cart.items.length > 0) {
     cart.items.forEach(({ product, quantity }) => {
-      total += product.amount * quantity;
+      const amt = product?.amount;
+      const discount = product?.pid?.sale;
+      total += amt * (1 - discount * 0.01) * quantity;
     });
   }
 
@@ -145,7 +153,9 @@ exports.getItems = catchAsyncError(async (req, res, next) => {
   var total = 0;
   if (cart?.items.length > 0) {
     cart?.items.forEach(({ product, quantity }) => {
-      total += product?.amount * quantity;
+      const amt = product?.amount;
+      const discount = product?.pid?.sale;
+      total += amt * (1 - discount * 0.01) * quantity;
     });
   }
 
