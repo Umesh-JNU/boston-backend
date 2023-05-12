@@ -6,8 +6,6 @@ const APIFeatures = require("../utils/apiFeatures");
 const ErrorHandler = require("../utils/errorHandler");
 const couponModel = require("../models/couponModel");
 
-const options = { path: "products.product", populate: { path: "pid", select: "-subProduct" } };
-
 exports.createOrder = catchAsyncError(async (req, res, next) => {
   const userId = req.userId;
 
@@ -33,7 +31,8 @@ exports.createOrder = catchAsyncError(async (req, res, next) => {
 
     return {
       quantity,
-      product: product._id,
+      product: product._doc,
+      parent_prod: product.pid._doc,
       updatedAmount,
     };
   });
@@ -72,8 +71,6 @@ exports.createOrder = catchAsyncError(async (req, res, next) => {
     orderId: '#' + orderId,
   });
 
-  await savedOrder.populate(options);
-
   await cartModel.updateOne({ user: req.userId }, { $set: { items: [] } });
 
   res.status(200).json({ message: "Order created!", savedOrder });
@@ -83,7 +80,7 @@ exports.getAll = catchAsyncError(async (req, res, next) => {
   let query = { userId: req.userId };
   if (req.query.status !== "all") query.status = req.query.status;
 
-  const apiFeature = new APIFeatures(Order.find(query).sort({ createdAt: -1 }).populate(options), req.query);
+  const apiFeature = new APIFeatures(Order.find(query).sort({ createdAt: -1 }), req.query);
 
   const orders = await apiFeature.query;
 
@@ -107,7 +104,7 @@ exports.getAllOrders = catchAsyncError(async (req, res, next) => {
 
   console.log("query", query);
   const apiFeature = new APIFeatures(
-    Order.find(query).sort({ createdAt: -1 }).populate("userId").populate(options),
+    Order.find(query).sort({ createdAt: -1 }).populate("userId"),
     req.query
   );
 
@@ -124,7 +121,7 @@ exports.getAllOrders = catchAsyncError(async (req, res, next) => {
 exports.getOrderById = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
   console.log("get order", id);
-  const order = await Order.findById(id).sort({ createdAt: -1 }).populate("userId").populate(options);
+  const order = await Order.findById(id).sort({ createdAt: -1 }).populate("userId");
 
   if (!order) return next(new ErrorHandler("Order not found.", 404));
 
@@ -133,14 +130,14 @@ exports.getOrderById = catchAsyncError(async (req, res, next) => {
 
 exports.getOrder = catchAsyncError(async (req, res, next) => {
   const orders = await Order.findOne({ userId: req.userId })
-    .sort({ _id: -1 }).limit(1).populate(options);
+    .sort({ _id: -1 }).limit(1);
 
   res.status(200).json({ message: "Order found!", orders });
 });
 
 exports.getRecent = catchAsyncError(async (req, res, next) => {
   const orders = await Order.find({ userId: req.userId })
-    .sort({ _id: -1 }).limit(4).populate(options);;
+    .sort({ _id: -1 }).limit(4);;
 
   res.status(200).json({ message: "Order found!", orders });
 });

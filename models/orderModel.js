@@ -8,13 +8,16 @@ const orderSchema = new Schema(
     products: [
       {
         product: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "SubProduct",
+          type: Object,
           required: true,
         },
         quantity: {
           type: Number,
           default: 1,
+        },
+        parent_prod: {
+          type: Object,
+          required: true,
         },
         updatedAmount: {
           type: Number,
