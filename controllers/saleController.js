@@ -17,31 +17,20 @@ exports.createSale = catchAsyncError(async (req, res, next) => {
 		const product = await productModel.findById(id);
 		if (!product) return next(new ErrorHandler("Product not found.", 404));
 
-		await saleModel.deleteOne({ type: "*" });
-
-		const categorySales = await saleModel.find({ category: product.category });
-		if (categorySales && categorySales.length > 0)
-			return next(new ErrorHandler("Product belongs to a category which is already in sale. Cannot create sale.", 400));
-
-		await saleModel.deleteOne({ product: id });
-
 		product.sale = discount;
 		await product.save();
 
 		saleData['product'] = id;
-
 		products = [product]
 	}
 	else if (type === "category") {
 		if (!id) return next(new ErrorHandler("Please provide the category id", 400));
 
-		await saleModel.deleteOne({ type: "*" });
-
-
 		const category = await categoryModel.findById(id);
 		if (!category) return next(new ErrorHandler("Category not found.", 404));
+		
 		products = await productModel.updateMany({ category: id }, { $set: { sale: discount } });
-		sale['category'] = id
+		saleData['category'] = id
 	}
 	else return next(new ErrorHandler("Invalid sale type", 400));
 
