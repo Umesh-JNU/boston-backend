@@ -37,7 +37,7 @@ exports.createOrder = catchAsyncError(async (req, res, next) => {
     };
   });
 
-  const { country, post_code, town, street, mobile_no, coupon_code } = req.body;
+  const { province, post_code, town, street, mobile_no, coupon_code } = req.body;
 
   const unique_id = uuid();
   const orderId = unique_id.slice(0, 6);
@@ -62,7 +62,7 @@ exports.createOrder = catchAsyncError(async (req, res, next) => {
     products: products,
     amount: total,
     address: {
-      country,
+      province,
       post_code,
       street,
       town,

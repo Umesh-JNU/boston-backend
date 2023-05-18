@@ -8,32 +8,50 @@ exports.createSale = catchAsyncError(async (req, res, next) => {
 	const { type, discount, id, start_date, end_date } = req.body;
 	let products, saleData = { type, discount, start_date, end_date };
 	if (type === "*") {
+		// delete all previous sales
 		await saleModel.deleteMany({});
 		products = await productModel.updateMany({}, { $set: { sale: discount } });
 	}
-	else if (type === "product") {
-		if (!id) return next(new ErrorHandler("Please provide the product id", 400));
+	else {
+		// check if on-site sale is going on. 
+		// if going on then no new sale can be created, other new category sale will be created.
+		let sale_ = await saleModel.findOne({type: "*"});
+		if(sale_) next(new ErrorHandler("New sale can't be created as on-site sale is going on.", 400));
 
-		const product = await productModel.findById(id);
-		if (!product) return next(new ErrorHandler("Product not found.", 404));
+		if (type === "category") {
+			if (!id) return next(new ErrorHandler("Please provide the category id", 400));
 
-		product.sale = discount;
-		await product.save();
-
-		saleData['product'] = id;
-		products = [product]
-	}
-	else if (type === "category") {
-		if (!id) return next(new ErrorHandler("Please provide the category id", 400));
-
-		const category = await categoryModel.findById(id);
-		if (!category) return next(new ErrorHandler("Category not found.", 404));
+			const category = await categoryModel.findById(id);
+			if (!category) return next(new ErrorHandler("Category not found.", 404));
 		
-		products = await productModel.updateMany({ category: id }, { $set: { sale: discount } });
-		saleData['category'] = id
-	}
-	else return next(new ErrorHandler("Invalid sale type", 400));
+			// delete the previous category sale if going on.
+			await saleModel.deleteOne({category: category._id});
 
+			products = await productModel.updateMany({ category: id }, { $set: { sale: discount } });
+			saleData['category'] = id
+		}
+		if (type === "product") {
+			if (!id) return next(new ErrorHandler("Please provide the product id", 400));
+
+			const product = await productModel.findById(id);
+			if (!product) return next(new ErrorHandler("Product not found.", 404));
+
+			sale_ = await saleModel.findOne({category: product.category});
+			if(sale_) next(new ErrorHandler("New sale can't be created as product's category sale is already goinf on.", 400));
+
+			// delete the previous product sale if going on
+			await saleModel.deleteOne({product: product._id});
+
+			product.sale = discount;
+			await product.save();
+
+			saleData['product'] = id;
+			products = [product]
+		}
+		else return next(new ErrorHandler("Invalid sale type", 400));
+	}
+
+	// finally create a new sale 
 	const sale = await saleModel.create(saleData);
 	res.status(200).json({ products, sale });
 })

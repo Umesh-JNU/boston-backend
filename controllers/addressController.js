@@ -5,7 +5,7 @@ const ErrorHandler = require("../utils/errorHandler");
 exports.addAddr = catchAsyncError(async (req, res, next) => {
   console.log("add address", req.body, req.userId);
   const userId = req.userId;
-  const { country, town, street, post_code, defaultAddress } = req.body;
+  const { province, town, street, post_code, defaultAddress } = req.body;
 
   if (defaultAddress) {
     await addrModel.updateMany(
@@ -17,7 +17,7 @@ exports.addAddr = catchAsyncError(async (req, res, next) => {
   }
 
   const newAddr = {
-    country,
+    province,
     town,
     street,
     post_code,
@@ -57,7 +57,7 @@ exports.deleteAddr = catchAsyncError(async (req, res, next) => {
 exports.updateAddr = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
   const userId = req.userId;
-  const { country, town, street, post_code, defaultAddress } = req.body;
+  const { province, town, street, post_code, defaultAddress } = req.body;
 
   const address = await addrModel.findOne({ _id: id, user: userId });
   if (!address) return next(new ErrorHandler("Address not found.", 404));
@@ -77,7 +77,7 @@ exports.updateAddr = catchAsyncError(async (req, res, next) => {
     // console.log("tempaddr ", tempaddr);
   }
 
-  address.country = country;
+  address.province = province;
   address.street = street;
   address.town = town;
   address.post_code = post_code;
@@ -107,7 +107,7 @@ exports.getAddr = catchAsyncError(async (req, res, next) => {
 /**
  
 {
-    "country": "india",
+    "province": "india",
     "street": "621",
     "town": "gaya",
     "post_code": "823003"

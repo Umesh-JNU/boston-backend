@@ -2,9 +2,9 @@ const mongoose = require("mongoose");
 
 const addrSchema = new mongoose.Schema(
   {
-    country: {
+    province: {
       type: String,
-      required: [true, "Please enter your country."],
+      required: [true, "Please enter your province."],
     },
     town: {
       type: String,
