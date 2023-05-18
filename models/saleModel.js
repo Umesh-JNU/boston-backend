@@ -1,5 +1,10 @@
 const mongoose = require("mongoose");
 
+const getDate = (value) => {
+	if(value) return new Date(value).toISOString().slice(0, 10);
+	return new Date().toISOString().slice(0, 10);
+}
+
 const saleSchema = new mongoose.Schema(
   {
     type: {
@@ -11,7 +16,7 @@ const saleSchema = new mongoose.Schema(
       required: [true, "Start date is required."],
       validate: {
         validator: function (value) {
-          return value >= new Date(); // Check if start_date is greater than or equal to today
+          return getDate(value) >= getDate(); // Check if start_date is greater than or equal to today
         },
         message: "Start date must be greater than or equal to today.",
       },
