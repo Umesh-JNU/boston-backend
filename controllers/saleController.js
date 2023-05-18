@@ -16,7 +16,7 @@ exports.createSale = catchAsyncError(async (req, res, next) => {
 		// check if on-site sale is going on. 
 		// if going on then no new sale can be created, other new category sale will be created.
 		let sale_ = await saleModel.findOne({type: "*"});
-		if(sale_) next(new ErrorHandler("New sale can't be created as on-site sale is going on.", 400));
+		if(sale_) return next(new ErrorHandler("New sale can't be created as on-site sale is going on.", 400));
 
 		if (type === "category") {
 			if (!id) return next(new ErrorHandler("Please provide the category id", 400));
@@ -42,7 +42,7 @@ exports.createSale = catchAsyncError(async (req, res, next) => {
 			if (!product) return next(new ErrorHandler("Product not found.", 404));
 
 			sale_ = await saleModel.findOne({category: product.category});
-			if(sale_) next(new ErrorHandler("New sale can't be created as product's category sale is already going on.", 400));
+			if(sale_) return next(new ErrorHandler("New sale can't be created as product's category sale is already going on.", 400));
 
 			// delete the previous product sale if going on
 			console.log({product})
