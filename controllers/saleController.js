@@ -27,6 +27,11 @@ exports.createSale = catchAsyncError(async (req, res, next) => {
 			// delete the previous category sale if going on.
 			await saleModel.deleteOne({category: category._id});
 
+			products = await productModel.find({category: category._id});
+			for(var prod in products) {
+				await saleModel.deleteOne({product: prod._id});
+			}
+			
 			products = await productModel.updateMany({ category: id }, { $set: { sale: discount } });
 			saleData['category'] = id
 		}
@@ -37,9 +42,11 @@ exports.createSale = catchAsyncError(async (req, res, next) => {
 			if (!product) return next(new ErrorHandler("Product not found.", 404));
 
 			sale_ = await saleModel.findOne({category: product.category});
-			if(sale_) next(new ErrorHandler("New sale can't be created as product's category sale is already goinf on.", 400));
+			if(sale_) next(new ErrorHandler("New sale can't be created as product's category sale is already going on.", 400));
 
 			// delete the previous product sale if going on
+			console.log({product})
+			console.log(await saleModel.findOne({product: product._id}), product._id);
 			await saleModel.deleteOne({product: product._id});
 
 			product.sale = discount;
