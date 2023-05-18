@@ -30,7 +30,7 @@ exports.createSale = catchAsyncError(async (req, res, next) => {
 			products = await productModel.updateMany({ category: id }, { $set: { sale: discount } });
 			saleData['category'] = id
 		}
-		if (type === "product") {
+		else if (type === "product") {
 			if (!id) return next(new ErrorHandler("Please provide the product id", 400));
 
 			const product = await productModel.findById(id);
