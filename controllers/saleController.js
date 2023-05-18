@@ -19,6 +19,7 @@ exports.createSale = catchAsyncError(async (req, res, next) => {
 		if(sale_) return next(new ErrorHandler("New sale can't be created as on-site sale is going on.", 400));
 
 		if (type === "category") {
+			console.log(req.body);
 			if (!id) return next(new ErrorHandler("Please provide the category id", 400));
 
 			const category = await categoryModel.findById(id);
@@ -28,8 +29,8 @@ exports.createSale = catchAsyncError(async (req, res, next) => {
 			await saleModel.deleteOne({category: category._id});
 
 			products = await productModel.find({category: category._id});
-			for(var prod in products) {
-				await saleModel.deleteOne({product: prod._id});
+			for(var idx in products) {
+				await saleModel.deleteOne({product: products[idx]._id});
 			}
 			
 			products = await productModel.updateMany({ category: id }, { $set: { sale: discount } });
@@ -65,21 +66,21 @@ exports.createSale = catchAsyncError(async (req, res, next) => {
 
 exports.getAllSale = catchAsyncError(async (req, res, next) => {
 	const saleCount = await saleModel.countDocuments();
-	console.log("saleCount", saleCount);
+	// console.log("saleCount", saleCount);
 	const apiFeature = new APIFeatures(
 		saleModel.find().sort({ createdAt: -1 }).populate("category product"),
 		req.query
 	).search("discount");
 
 	let sales = await apiFeature.query;
-	console.log("sales", sales);
+	// console.log("sales", sales);
 	let filteredSaleCount = sales.length;
 	if (req.query.resultPerPage && req.query.currentPage) {
 		apiFeature.pagination();
 
-		console.log("filteredSaleCount", filteredSaleCount);
+		// console.log("filteredSaleCount", filteredSaleCount);
 		sales = await apiFeature.query.clone();
-		console.log("sales1", sales);
+		// console.log("sales1", sales);
 	}
 
 	res.status(200).json({ sales, saleCount, filteredSaleCount });
