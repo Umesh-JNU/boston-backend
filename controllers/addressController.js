@@ -16,30 +16,40 @@ const calc_shipping = (total, addr, next) => {
    - 3-4 business day for delivery, 40$ shipping charge for order amount < 300$, otherwise 0.
   */}
 
-  console.log({total, addr});
-  
+  console.log({ total, addr });
+
   const towns = ["mississauga", "oakville", "milton", "brampton", "etobicoke"];
   let charge = 0, message = "It will take 2-3 business days for order to be delivered."
-  if (addr.province.toLowerCase() === 'ontario') {
-    if (!towns.includes(addr.town.toLowerCase())) {
-      if (total < 60)
-        return next(new ErrorHandler("Please add more items. Minimum order amount is 60$", 400));
+  const isProvince = addr.province.toLowerCase() === 'ontario';
+  const isTown = towns.includes(addr.town.toLowerCase());
+  console.log({isProvince, isTown});
+  console.log(isProvince && isTown);
 
-      if (total < 200) charge = 20;
-    }
-    else {
+  switch (true) {
+    case isProvince && isTown:
+      console.log("CASE 1")
       if (total < 80)
         return next(new ErrorHandler("Please add more items. Minimum order amount is 80$", 400));
 
       message = "Order will be delivered by tomorrow. Note:- Order will be delivered on same day on placing order before 12PM.";
-    }
-  }
-  else {
-    if (total < 60)
-      return next(new ErrorHandler("Please add more items. Minimum order amount is 60$", 400));
+      break;
 
-    if (total < 300)
-      charge = 40;
+    case isProvince && !isTown:
+      console.log("CASE 2")
+      if (total < 60)
+        return next(new ErrorHandler("Please add more items. Minimum order amount is 60$", 400));
+
+      if (total < 200) charge = 20;
+      break;
+
+    default:
+      console.log("CASE 3")
+      if (total < 60)
+        return next(new ErrorHandler("Please add more items. Minimum order amount is 60$", 400));
+
+      if (total < 300)
+        charge = 40;
+      break;
   }
 
   return [charge, message];
@@ -48,7 +58,7 @@ const calc_shipping = (total, addr, next) => {
 const addAddr = catchAsyncError(async (req, res, next) => {
   console.log("add address", req.body, req.userId);
   const userId = req.userId;
-  const { province, town, street, post_code, defaultAddress } = req.body;
+  const { province, town, street, post_code, unit, defaultAddress } = req.body;
 
   if (defaultAddress) {
     await addrModel.updateMany(
@@ -64,6 +74,7 @@ const addAddr = catchAsyncError(async (req, res, next) => {
     town,
     street,
     post_code,
+    unit,
     defaultAddress,
     user: userId,
   };
@@ -100,7 +111,7 @@ const deleteAddr = catchAsyncError(async (req, res, next) => {
 const updateAddr = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
   const userId = req.userId;
-  const { province, town, street, post_code, defaultAddress } = req.body;
+  const { province, town, street, post_code, unit, defaultAddress } = req.body;
 
   const address = await addrModel.findOne({ _id: id, user: userId });
   if (!address) return next(new ErrorHandler("Address not found.", 404));
@@ -124,6 +135,7 @@ const updateAddr = catchAsyncError(async (req, res, next) => {
   address.street = street;
   address.town = town;
   address.post_code = post_code;
+  address.unit = unit;
   address.defaultAddress = defaultAddress;
 
   await address.save();

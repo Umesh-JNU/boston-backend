@@ -18,6 +18,10 @@ const addrSchema = new mongoose.Schema(
       type: String,
       required: [true, "Please enter your Postcode/ZIP."],
     },
+    unit: {
+      type: String,
+      required: [true, "Please enter your Postcode/ZIP."],
+    },
     defaultAddress: {
       type: Boolean,
     },
