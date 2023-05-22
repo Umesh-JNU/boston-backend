@@ -1,8 +1,49 @@
 const catchAsyncError = require("../utils/catchAsyncError");
 const addrModel = require("../models/addressModel");
 const ErrorHandler = require("../utils/errorHandler");
+const addressModel = require("../models/addressModel");
+const cartModel = require("../models/cartModel");
+const { calc_total } = require("./cartController");
 
-exports.addAddr = catchAsyncError(async (req, res, next) => {
+
+const calc_shipping = (total, addr, res) => {
+  {/*
+   1. if town belongs to Ontario and is one of [ "Mississauga", "Oakville", "Milton", "Brampton", "Etobicoke" ]
+   - Same day delivery, 0 shipping charge
+   2. town belongs to Ontario but is other than one of the above five towns
+   - 3-4 business day for delivery, 20$ shipping charge for order amount < 200$, otherwise 0
+   3. other than above two
+   - 3-4 business day for delivery, 40$ shipping charge for order amount < 300$, otherwise 0.
+  */}
+
+  const towns = ["mississauga", "oakville", "milton", "brampton", "etobicoke"];
+  let charge = 0, message = "It will take 2-3 business days for order to be delivered."
+  if (addr.province.toLowerCase() === 'ontario') {
+    if (!towns.includes(addr.town.toLowerCase())) {
+      if (total < 60)
+        return next(new ErrorHandler("Please add more items. Minimum order amount is 60$", 400));
+
+      if (total < 200) charge = 20;
+    }
+    else {
+      if (total < 80)
+        return next(new ErrorHandler("Please add more items. Minimum order amount is 80$", 400));
+
+      message = "Order will be delivered by tomorrow. Note:- Order will be delivered on same day on placing order before 12PM.";
+    }
+  }
+  else {
+    if (total < 60)
+      return next(new ErrorHandler("Please add more items. Minimum order amount is 60$", 400));
+
+    if (total < 300)
+      charge = 40;
+  }
+
+  return [charge, message];
+}
+
+const addAddr = catchAsyncError(async (req, res, next) => {
   console.log("add address", req.body, req.userId);
   const userId = req.userId;
   const { province, town, street, post_code, defaultAddress } = req.body;
@@ -32,7 +73,7 @@ exports.addAddr = catchAsyncError(async (req, res, next) => {
   res.status(201).json({ address, defaultAddress: defaultAddress });
 });
 
-exports.getAllAddr = catchAsyncError(async (req, res, next) => {
+const getAllAddr = catchAsyncError(async (req, res, next) => {
   const userId = req.userId;
 
   const address_book = await addrModel.find({ user: userId });
@@ -40,7 +81,7 @@ exports.getAllAddr = catchAsyncError(async (req, res, next) => {
   res.status(200).json({ address_book });
 });
 
-exports.deleteAddr = catchAsyncError(async (req, res, next) => {
+const deleteAddr = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
   const userId = req.userId;
 
@@ -54,7 +95,7 @@ exports.deleteAddr = catchAsyncError(async (req, res, next) => {
   res.status(202).json({ message: "Address Deleted successfully." });
 });
 
-exports.updateAddr = catchAsyncError(async (req, res, next) => {
+const updateAddr = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
   const userId = req.userId;
   const { province, town, street, post_code, defaultAddress } = req.body;
@@ -90,7 +131,7 @@ exports.updateAddr = catchAsyncError(async (req, res, next) => {
   res.status(203).json({ address });
 });
 
-exports.getAddr = catchAsyncError(async (req, res, next) => {
+const getAddr = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
   console.log(req.userId);
   const userId = req.userId;
@@ -104,13 +145,36 @@ exports.getAddr = catchAsyncError(async (req, res, next) => {
   res.status(200).json({ address });
 });
 
-/**
- 
-{
-    "province": "india",
-    "street": "621",
-    "town": "gaya",
-    "post_code": "823003"
-}
+const getShippingCharge = catchAsyncError(async (req, res, next) => {
+  const { addr_id } = req.query;
 
- */
+  const addr = await addressModel.findById(addr_id);
+  if (!addr)
+    return next(new ErrorHandler("Address not found", 404));
+
+  const cart = await (await cartModel
+    .findOne({ user: req.userId })
+    .populate("items.product")).populate("items.product.pid", "-subProduct");
+
+  if (!cart)
+    return next(new ErrorHandler("Cart not found", 404));
+
+  const [total, inSalePrice] = calc_total(cart);
+  const [charge, message] = calc_shipping(total, addr, res);
+
+  res.status(200).json({
+    total,
+    charge,
+    message
+  })
+});
+
+module.exports = {
+  addAddr,
+  getAddr,
+  updateAddr,
+  deleteAddr,
+  getAllAddr,
+  getShippingCharge,
+  calc_shipping
+};

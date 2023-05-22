@@ -5,6 +5,8 @@ const catchAsyncError = require("../utils/catchAsyncError");
 const APIFeatures = require("../utils/apiFeatures");
 const ErrorHandler = require("../utils/errorHandler");
 const couponModel = require("../models/couponModel");
+const addressModel = require("../models/addressModel");
+const { calc_shipping } = require("./addressController");
 
 exports.createOrder = catchAsyncError(async (req, res, next) => {
   const userId = req.userId;
@@ -37,7 +39,13 @@ exports.createOrder = catchAsyncError(async (req, res, next) => {
     };
   });
 
-  const { province, post_code, town, street, mobile_no, coupon_code } = req.body;
+  const { addr_id, mobile_no, coupon_code } = req.body;
+
+  const addr = await addressModel.findById(addr_id);
+  if (!addr) return next(new ErrorHandler("Address not found", 404));
+
+  const { province, town, street, post_code } = addr;
+  const [charge, _] = calc_shipping(total, addr, res);
 
   const unique_id = uuid();
   const orderId = unique_id.slice(0, 6);
@@ -57,10 +65,12 @@ exports.createOrder = catchAsyncError(async (req, res, next) => {
     else return next(new ErrorHandler("Coupon is expired.", 401));
   }
 
+  total += charge;
   const savedOrder = await Order.create({
     userId: userId,
     products: products,
     amount: total,
+    shipping_charge: charge,
     address: {
       province,
       post_code,

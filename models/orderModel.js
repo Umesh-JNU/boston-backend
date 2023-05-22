@@ -27,7 +27,11 @@ const orderSchema = new Schema(
     amount: {
       type: Number,
       required: true,
-      min: [60, "Order can only be placed for amount at least 60"]
+      // min: [60, "Order can only be placed for amount at least 60"]
+    },
+    shipping_charge: {
+      type: Number,
+      required: true,
     },
     address: {
       province: {

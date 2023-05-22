@@ -4,7 +4,33 @@ const cartModel = require("../models/cartModel");
 const orderModel = require("../models/orderModel");
 const { subProdModel } = require("../models/productModel");
 
-exports.addItem = catchAsyncError(async (req, res, next) => {
+const calc_total = (cart) => {
+  var total = 0;
+  const inSalePrice = [];
+
+  if (cart.items.length > 0) {
+    cart.items.forEach(({ product, quantity }) => {
+      const amt = product?.amount;
+      const discount = product.pid?.sale;
+      const updatedAmount = amt * (1 - discount * 0.01)
+      total += updatedAmount * quantity;
+      if (updatedAmount !== amt) inSalePrice.push({ id: product._id, updatedAmount })
+    });
+  }
+  return [total, inSalePrice];
+}
+
+const sendData = (cart, res) => {
+  const [total, inSalePrice] = calc_total(cart);
+
+  res.status(200).json({
+    cartItems: cart.items,
+    inSalePrice,
+    total,
+  });
+}
+
+const addItem = catchAsyncError(async (req, res, next) => {
   console.log("cart add", req.body);
   const { product, quantity } = req.body;
 
@@ -37,26 +63,10 @@ exports.addItem = catchAsyncError(async (req, res, next) => {
   });
 
   console.log(cart, cart.items);
-  var total = 0;
-  const inSalePrice = [];
-  if (cart.items.length > 0) {
-    cart.items.forEach(({ product, quantity }) => {
-      const amt = product?.amount;
-      const discount = product.pid?.sale;
-      const updatedAmount = amt * (1 - discount * 0.01)
-      total += updatedAmount * quantity;
-      if (updatedAmount !== amt) inSalePrice.push({id: product._id, updatedAmount})
-    });
-  }
-
-  res.status(200).json({
-    cartItems: cart.items,
-    inSalePrice,
-    total,
-  });
+  sendData(cart, res);
 });
 
-exports.deleteItem = catchAsyncError(async (req, res, next) => {
+const deleteItem = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
   console.log("id", id);
   const cart = await cartModel.findOne({ user: req.userId });
@@ -75,26 +85,10 @@ exports.deleteItem = catchAsyncError(async (req, res, next) => {
 
   await (await (await cart.save()).populate("items.product")).populate("items.product.pid", "-subProduct");
 
-  var total = 0;
-  const inSalePrice = [];
-  if (cart.items.length > 0) {
-    cart.items.forEach(({ product, quantity }) => {
-      const amt = product?.amount;
-      const discount = product.pid?.sale;
-      const updatedAmount = amt * (1 - discount * 0.01)
-      total += updatedAmount * quantity;
-      if (updatedAmount !== amt) inSalePrice.push({id: product._id, updatedAmount})
-    });
-  }
-
-  res.status(200).json({
-    cartItems: cart.items,
-    inSalePrice,
-    total,
-  });
+  sendData(cart, res);
 });
 
-exports.recentCart = catchAsyncError(async (req, res, next) => {
+const recentCart = catchAsyncError(async (req, res, next) => {
   try {
     const order = await orderModel
       .findOne({ _id: req.body.orderId })
@@ -118,7 +112,7 @@ exports.recentCart = catchAsyncError(async (req, res, next) => {
   }
 });
 
-exports.updateItem = catchAsyncError(async (req, res, next) => {
+const updateItem = catchAsyncError(async (req, res, next) => {
   const { quantity } = req.body;
   const { id } = req.params;
   console.log(id);
@@ -138,46 +132,23 @@ exports.updateItem = catchAsyncError(async (req, res, next) => {
   cart.items[index].quantity = quantity;
   await (await (await cart.save()).populate("items.product")).populate("items.product.pid", "-subProduct");
 
-  var total = 0;
-  const inSalePrice = [];
-  if (cart.items.length > 0) {
-    cart.items.forEach(({ product, quantity }) => {
-      const amt = product?.amount;
-      const discount = product.pid?.sale;
-      const updatedAmount = amt * (1 - discount * 0.01)
-      total += updatedAmount * quantity;
-      if (updatedAmount !== amt) inSalePrice.push({id: product._id, updatedAmount})
-    });
-  }
-
-  res.status(200).json({
-    cartItems: cart.items,
-    inSalePrice,
-    total,
-  });
+  sendData(cart, res);
 });
 
-exports.getItems = catchAsyncError(async (req, res, next) => {
+const getItems = catchAsyncError(async (req, res, next) => {
   const cart = await (await cartModel
     .findOne({ user: req.userId })
     .populate("items.product")).populate("items.product.pid", "-subProduct");
   console.log("cart", cart);
 
-  var total = 0;
-  const inSalePrice = [];
-  if (cart.items.length > 0) {
-    cart.items.forEach(({ product, quantity }) => {
-      const amt = product?.amount;
-      const discount = product.pid?.sale;
-      const updatedAmount = amt * (1 - discount * 0.01)
-      total += updatedAmount * quantity;
-      if (updatedAmount !== amt) inSalePrice.push({id: product._id, updatedAmount})
-    });
-  }
-
-  res.status(200).json({
-    cartItems: cart.items,
-    inSalePrice,
-    total,
-  });
+  sendData(cart, res);
 });
+
+module.exports = {
+  addItem,
+  updateItem,
+  deleteItem,
+  getItems,
+  recentCart,
+  calc_total
+};
