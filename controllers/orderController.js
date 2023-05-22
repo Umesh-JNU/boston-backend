@@ -45,7 +45,7 @@ exports.createOrder = catchAsyncError(async (req, res, next) => {
   if (!addr) return next(new ErrorHandler("Address not found", 404));
 
   const { province, town, street, post_code } = addr;
-  const [charge, _] = calc_shipping(total, addr, res);
+  const [charge, _] = calc_shipping(total, addr, next);
 
   const unique_id = uuid();
   const orderId = unique_id.slice(0, 6);

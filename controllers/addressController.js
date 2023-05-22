@@ -6,7 +6,7 @@ const cartModel = require("../models/cartModel");
 const { calc_total } = require("./cartController");
 
 
-const calc_shipping = (total, addr, res) => {
+const calc_shipping = (total, addr, next) => {
   {/*
    1. if town belongs to Ontario and is one of [ "Mississauga", "Oakville", "Milton", "Brampton", "Etobicoke" ]
    - Same day delivery, 0 shipping charge
@@ -16,6 +16,8 @@ const calc_shipping = (total, addr, res) => {
    - 3-4 business day for delivery, 40$ shipping charge for order amount < 300$, otherwise 0.
   */}
 
+  console.log({total, addr});
+  
   const towns = ["mississauga", "oakville", "milton", "brampton", "etobicoke"];
   let charge = 0, message = "It will take 2-3 business days for order to be delivered."
   if (addr.province.toLowerCase() === 'ontario') {
@@ -160,7 +162,7 @@ const getShippingCharge = catchAsyncError(async (req, res, next) => {
     return next(new ErrorHandler("Cart not found", 404));
 
   const [total, inSalePrice] = calc_total(cart);
-  const [charge, message] = calc_shipping(total, addr, res);
+  const [charge, message] = calc_shipping(total, addr, next);
 
   res.status(200).json({
     total,

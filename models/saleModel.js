@@ -16,7 +16,7 @@ const saleSchema = new mongoose.Schema(
       required: [true, "Start date is required."],
       validate: {
         validator: function (value) {
-					//console.log(typeof value);
+					console.log(typeof value);
 					// console.log(value.slice(0, 10), new Date().toISOString().slice(0, 10));
           return getDate(value) >= getDate(); // Check if start_date is greater than or equal to today
         },
