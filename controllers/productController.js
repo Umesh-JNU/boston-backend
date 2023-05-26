@@ -62,7 +62,7 @@ exports.getAllProducts = catchAsyncError(async (req, res, next) => {
 
 exports.getProduct = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
-  const products = await aggregate([{ $match: { _id: mongoose.Types.ObjectId(id) } }]);
+  const products = await aggregate([], { _id: mongoose.Types.ObjectId(id) });
   if (products.length === 0) return next(new ErrorHandler("Product not found", 404));
 
   res.status(200).json({ product: products[0] });
