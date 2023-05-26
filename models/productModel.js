@@ -91,8 +91,10 @@ const subProductSchema = new mongoose.Schema(
 );
 const subProdModel = mongoose.model("SubProduct", subProductSchema);
 
-const aggregate = async (queryOptions) => {
-  console.log({ queryOptions });
+// const aggregate = async (match) => {
+//   console.log({ match });
+const aggregate = async (queryOptions, match) => {
+  console.log({ queryOptions, match });
   return await subProdModel.aggregate([
     {
       $group: {
@@ -103,10 +105,14 @@ const aggregate = async (queryOptions) => {
     {
       $lookup: {
         from: "products",
-        // let: { productId: "$_id" },
+        let: { productId: "$_id" },
         pipeline: [
-          // { $match: { $expr: { $eq: ["$_id", "$$productId"] } } },
-          { $match: { $expr: { $eq: ["$_id", "$_id", "$name", "vapes"] } } },
+          {
+            $match: {
+              $expr: { $eq: ["$_id", "$$productId"] },
+              ...match,
+            }
+          },
           {
             $lookup: {
               from: "categories",
@@ -130,6 +136,7 @@ const aggregate = async (queryOptions) => {
       }
     },
     { $unwind: "$pid" },
+    { $sort: { "pid.createdAt": -1 } },
     {
       $addFields: {
         subProducts: {
@@ -160,7 +167,8 @@ const aggregate = async (queryOptions) => {
       }
     },
     { $project: { "subProducts.pid": 0 } },
-    ...queryOptions,
+
+    ...queryOptions
   ]);
 
 }

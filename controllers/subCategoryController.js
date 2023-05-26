@@ -1,4 +1,4 @@
-const mongoose = require("mongoose"); 
+const mongoose = require("mongoose");
 const { subCategoryModel, aggregate } = require("../models/productModel");
 const APIFeatures = require("../utils/apiFeatures");
 const catchAsyncError = require("../utils/catchAsyncError");
@@ -77,7 +77,7 @@ exports.deleteSubCategory = catchAsyncError(async (req, res, next) => {
 
 exports.getAllProducts = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
-  const products = await aggregate({ sub_category: mongoose.Types.ObjectId(id) });
+  const products = await aggregate([], { sub_category: mongoose.Types.ObjectId(id) });
 
   res.status(200).json({ products });
 });

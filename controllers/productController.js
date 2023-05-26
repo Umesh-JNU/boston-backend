@@ -27,24 +27,35 @@ exports.getAllProducts = catchAsyncError(async (req, res, next) => {
   console.log("productCount", productCount);
 
   const { keyword, currentPage, resultPerPage } = req.query;
-  const queryOptions = [];
-  if (keyword) queryOptions.push({
-    $match: {
-      name: {
-        $regex: keyword,
-        $options: "i",
-      }
-    }
-  });
 
+  let match = {};
+  if (keyword) {
+    match = { name: { $regex: keyword, $options: "i" } };
+  }
+
+  // let products = await aggregate(match);
+  // console.log(products.length);
+  // console.log({ products });
+  // if (currentPage && resultPerPage) {
+  //   const r = parseInt(resultPerPage);
+  //   const c = parseInt(currentPage);
+
+  //   const skip = r * (c-1);
+  //   console.log(skip, skip+r);
+  //   products = products.slice(skip, skip + r);
+  // }
+
+  const queryOptions = [];
   if (currentPage && resultPerPage) {
     const r = parseInt(resultPerPage);
     const c = parseInt(currentPage);
-    queryOptions.push({ $skip: r * (c - 1) });
+
+    const skip = r * (c - 1);
+    queryOptions.push({ $skip: skip });
     queryOptions.push({ $limit: r });
   }
+  const products = await aggregate(queryOptions, match);
 
-  const products = await aggregate(queryOptions);
   let filteredProductCount = products.length;
   res.status(200).json({ products, productCount, filteredProductCount });
 });

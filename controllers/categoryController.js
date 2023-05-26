@@ -73,8 +73,8 @@ exports.deleteCategory = catchAsyncError(async (req, res, next) => {
 exports.getAllProducts = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
   let products;
-  if (id === "64407ccb7d5153dc445477d8") products = await aggregate({ sale: { $gt: 0 } });
-  else products = await aggregate({ category: mongoose.Types.ObjectId(id) });
+  if (id === "64407ccb7d5153dc445477d8") products = await aggregate([], { sale: { $gt: 0 } });
+  else products = await aggregate([], { category: mongoose.Types.ObjectId(id) });
 
   res.status(200).json({ products });
 });
