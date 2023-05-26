@@ -66,10 +66,6 @@ const productSchema = new mongoose.Schema(
       ref: "SubCategory",
       required: [true, "Please provide belonging subCategory."],
     },
-    subProduct: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "SubProduct",
-    }]
   },
   { timestamps: true }
 );
@@ -95,62 +91,80 @@ const subProductSchema = new mongoose.Schema(
 );
 const subProdModel = mongoose.model("SubProduct", subProductSchema);
 
-const aggregate = async (match) => {
-  console.log(match);
-  return await productModel.aggregate([
-    { $match: match },
-    {
-      $lookup: {
-        from: "categories",
-        localField: "category",
-        foreignField: "_id",
-        as: "category",
-      }
-    },
-    { $unwind: "$category" },
-    {
-      $lookup: {
-        from: "subcategories",
-        localField: "sub_category",
-        foreignField: "_id",
-        as: "sub_category",
-      }
-    },
-    { $unwind: "$sub_category" },
-    {
-      $lookup: {
-        from: "subproducts",
-        localField: "subProduct",
-        foreignField: "_id",
-        as: "subProducts",
-      },
-    },
-    { $unwind: "$subProducts" },
-    {
-      $addFields: {
-        "subProducts.updatedAmount": {
-          $subtract: ["$subProducts.amount", { $multiply: [0.01, "$subProducts.amount", "$sale",] }],
-        },
-      },
-    },
+const aggregate = async (queryOptions) => {
+  console.log({ queryOptions });
+  return await subProdModel.aggregate([
     {
       $group: {
-        _id: "$_id",
-        name: { $first: "$name" },
-        description: { $first: "$description" },
-        product_images: { $first: "$product_images" },
-        stock: { $first: "$stock" },
-        rating: { $first: "$rating" },
-        sale: { $first: "$sale" },
-        category: { $first: "$category" },
-        sub_category: { $first: "$sub_category" },
-        subProducts: { $push: "$subProducts" },
-        createdAt: {$first: "$createdAt"},
-        updatedAt: {$first: "$updatedAt"}
+        _id: "$pid",
+        subProducts: { $push: "$$ROOT" }
       },
     },
+    {
+      $lookup: {
+        from: "products",
+        // let: { productId: "$_id" },
+        pipeline: [
+          // { $match: { $expr: { $eq: ["$_id", "$$productId"] } } },
+          { $match: { $expr: { $eq: ["$_id", "$_id", "$name", "vapes"] } } },
+          {
+            $lookup: {
+              from: "categories",
+              localField: "category",
+              foreignField: "_id",
+              as: "category"
+            }
+          },
+          { $unwind: "$category" },
+          {
+            $lookup: {
+              from: "subcategories",
+              localField: "sub_category",
+              foreignField: "_id",
+              as: "sub_category"
+            }
+          },
+          { $unwind: "$sub_category" }
+        ],
+        as: "pid"
+      }
+    },
+    { $unwind: "$pid" },
+    {
+      $addFields: {
+        subProducts: {
+          $map: {
+            input: "$subProducts",
+            as: "subProduct",
+            in: {
+              $mergeObjects: [
+                "$$subProduct", {
+                  updatedAmount: {
+                    $subtract: ["$$subProduct.amount", { $multiply: [0.01, "$$subProduct.amount", "$pid.sale"] }]
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    // { $project: { "subProducts.pid": 0 } },
+    // { $addFields: { "_id.subProducts": "$subProducts" } },
+    // { $project: { subProducts: 0 } },
+    {
+      $replaceRoot: {
+        newRoot: {
+          $mergeObjects: ["$pid", { subProducts: "$subProducts" }]
+        }
+      }
+    },
+    { $project: { "subProducts.pid": 0 } },
+    ...queryOptions,
   ]);
+
 }
+
 module.exports = {
   aggregate,
   categoryModel,

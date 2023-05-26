@@ -50,6 +50,10 @@ const orderSchema = new Schema(
         type: String,
         required: true,
       },
+      unit: {
+        type: String,
+        required: true,
+      },
       mobile_no: {
         type: Number,
         required: true,

@@ -36,9 +36,6 @@ const userSchema = new mongoose.Schema(
     mobile_no: {
       type: Number,
     },
-    fax: {
-      type: String,
-    },
     role: {
       type: String,
       default: "user",

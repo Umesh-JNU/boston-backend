@@ -44,7 +44,7 @@ exports.createOrder = catchAsyncError(async (req, res, next) => {
   const addr = await addressModel.findById(addr_id);
   if (!addr) return next(new ErrorHandler("Address not found", 404));
 
-  const { province, town, street, post_code } = addr;
+  const { province, town, street, post_code, unit } = addr;
   const [charge, _] = calc_shipping(total, addr, next);
 
   const unique_id = uuid();
@@ -53,17 +53,17 @@ exports.createOrder = catchAsyncError(async (req, res, next) => {
   console.log("orderId ", orderId);
   console.log('order create', req.body);
 
-  if (coupon_code) {
-    const coupon = await couponModel.findOne({ user: userId, _id: coupon_code });
-    console.log("coupon", coupon);
-    console.log({ now: Date.now(), createdAt: coupon.createdAt, diff: Date.now() - coupon.createdAt })
+  // if (coupon_code) {
+  //   const coupon = await couponModel.findOne({ user: userId, _id: coupon_code });
+  //   console.log("coupon", coupon);
+  //   console.log({ now: Date.now(), createdAt: coupon.createdAt, diff: Date.now() - coupon.createdAt })
 
-    if (Date.now() - coupon.createdAt <= 30 * 60 * 60 * 1000) {
-      total -= coupon.amount;
-      await coupon.remove();
-    }
-    else return next(new ErrorHandler("Coupon is expired.", 401));
-  }
+  //   if (Date.now() - coupon.createdAt <= 30 * 60 * 60 * 1000) {
+  //     total -= coupon.amount;
+  //     await coupon.remove();
+  //   }
+  //   else return next(new ErrorHandler("Coupon is expired.", 401));
+  // }
 
   total += charge;
   const savedOrder = await Order.create({
@@ -76,6 +76,7 @@ exports.createOrder = catchAsyncError(async (req, res, next) => {
       post_code,
       street,
       town,
+      unit,
       mobile_no
     },
     orderId: '#' + orderId,

@@ -70,6 +70,8 @@ const deleteItem = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
   console.log("id", id);
   const cart = await cartModel.findOne({ user: req.userId });
+  if (!cart) return next(new ErrorHandler("Cart not found", 404));
+
   console.log("cart", cart);
 
   console.log("cart items", cart.items);
@@ -77,7 +79,7 @@ const deleteItem = catchAsyncError(async (req, res, next) => {
     cart.items.filter((item) => item.product.toString() === id).length === 0;
 
   if (isExist)
-    return next(new ErrorHandler("Product is not found in the cart.", 401));
+    return next(new ErrorHandler("Product is not found in the cart.", 404));
 
   const index = cart.items.map((item) => item.product.toString()).indexOf(id);
 
