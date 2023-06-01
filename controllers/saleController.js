@@ -4,19 +4,31 @@ const { productModel, categoryModel, subProdModel } = require("../models/product
 const saleModel = require("../models/saleModel");
 const APIFeatures = require("../utils/apiFeatures");
 
+const launchSale = (start_date) => {
+	const dt = new Date();
+	console.log({dt});
+	const coming_date = new Date(dt.setDate(dt.getDate() + 1)).toISOString().slice(0, 10);
+	console.log({dt, start_date, coming_date});
+
+	return start_date < coming_date;
+};
+
 exports.createSale = catchAsyncError(async (req, res, next) => {
 	const { type, discount, id, start_date, end_date } = req.body;
 	let products, saleData = { type, discount, start_date, end_date };
+
 	if (type === "*") {
 		// delete all previous sales
 		await saleModel.deleteMany({});
-		products = await productModel.updateMany({}, { $set: { sale: discount } });
+		if (launchSale(start_date)) {
+			products = await productModel.updateMany({}, { $set: { sale: discount } });
+		}
 	}
 	else {
 		// check if on-site sale is going on. 
 		// if going on then no new sale can be created, other new category sale will be created.
-		let sale_ = await saleModel.findOne({type: "*"});
-		if(sale_) return next(new ErrorHandler("New sale can't be created as on-site sale is going on.", 400));
+		let sale_ = await saleModel.findOne({ type: "*" });
+		if (sale_) return next(new ErrorHandler("New sale can't be created as on-site sale is going on.", 400));
 
 		if (type === "category") {
 			console.log(req.body);
@@ -24,16 +36,18 @@ exports.createSale = catchAsyncError(async (req, res, next) => {
 
 			const category = await categoryModel.findById(id);
 			if (!category) return next(new ErrorHandler("Category not found.", 404));
-		
-			// delete the previous category sale if going on.
-			await saleModel.deleteOne({category: category._id});
 
-			products = await productModel.find({category: category._id});
-			for(var idx in products) {
-				await saleModel.deleteOne({product: products[idx]._id});
+			// delete the previous category sale if going on.
+			await saleModel.deleteOne({ category: category._id });
+
+			products = await productModel.find({ category: category._id });
+			for (var idx in products) {
+				await saleModel.deleteOne({ product: products[idx]._id });
 			}
-			
-			products = await productModel.updateMany({ category: id }, { $set: { sale: discount } });
+
+			if (launchSale(start_date)) {
+				products = await productModel.updateMany({ category: id }, { $set: { sale: discount } });
+			}
 			saleData['category'] = id
 		}
 		else if (type === "product") {
@@ -42,16 +56,18 @@ exports.createSale = catchAsyncError(async (req, res, next) => {
 			const product = await productModel.findById(id);
 			if (!product) return next(new ErrorHandler("Product not found.", 404));
 
-			sale_ = await saleModel.findOne({category: product.category});
-			if(sale_) return next(new ErrorHandler("New sale can't be created as product's category sale is already going on.", 400));
+			sale_ = await saleModel.findOne({ category: product.category });
+			if (sale_) return next(new ErrorHandler("New sale can't be created as product's category sale is already going on.", 400));
 
 			// delete the previous product sale if going on
-			console.log({product})
-			console.log(await saleModel.findOne({product: product._id}), product._id);
-			await saleModel.deleteOne({product: product._id});
+			// console.log({ product })
+			// console.log(await saleModel.findOne({ product: product._id }), product._id);
+			await saleModel.deleteOne({ product: product._id });
 
-			product.sale = discount;
-			await product.save();
+			if (launchSale(start_date)) {
+				product.sale = discount;
+				await product.save();
+			}
 
 			saleData['product'] = id;
 			products = [product]
