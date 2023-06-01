@@ -189,7 +189,6 @@ exports.updateUser = catchAsyncError(async (req, res, next) => {
   user.firstname = firstname;
   user.lastname = lastname;
   user.mobile_no = mobile_no;
-  user.fax = fax;
   user.role = role;
   await user.save();
 

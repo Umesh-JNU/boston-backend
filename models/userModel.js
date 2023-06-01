@@ -35,7 +35,7 @@ const userSchema = new mongoose.Schema(
     },
     mobile_no: {
       type: Number,
-      required: [true, "Please enter your mobile number."],
+      required: [true, "Mobile number is required."],
     },
     role: {
       type: String,

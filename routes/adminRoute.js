@@ -49,6 +49,11 @@ const {
   updateFaq,
   deleteFaq,
 } = require("../controllers/faqController");
+const { 
+  createShipping, 
+  updateShipping, 
+  deleteShipping 
+} = require("../controllers/shippingController");
 
 const { auth, isAdmin } = require("../middlewares/auth");
 const { s3Uploadv2, upload, s3UploadMulti } = require("../utils/s3");
@@ -118,6 +123,12 @@ router
   .route("/faq/:id")
   .put(auth, isAdmin, updateFaq)
   .delete(auth, isAdmin, deleteFaq);
+
+router.post("/shipping/create", auth, isAdmin, createShipping);
+router
+  .route("/shipping/:id")
+  .put(auth, isAdmin, updateShipping)
+  .delete(auth, isAdmin, deleteShipping);
 
 router.post("/image", upload.single("image"), postSingleImage);
 router.post("/multi-image", upload.array("image"), postMultipleImages);

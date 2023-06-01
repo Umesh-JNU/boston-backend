@@ -1,4 +1,4 @@
-const faqModel = require('../models/faqModel');
+const { faqModel, aggregate } = require('../models/faqModel');
 const APIFeatures = require("../utils/apiFeatures");
 const catchAsyncError = require("../utils/catchAsyncError");
 const ErrorHandler = require("../utils/errorHandler");
@@ -10,18 +10,28 @@ exports.createFaq = catchAsyncError(async (req, res, next) => {
 });
 
 exports.getAllFaq = catchAsyncError(async (req, res, next) => {
-  console.log("get all faq");
-  const apiFeature = new APIFeatures(faqModel.find(), req.query);
+  console.log("get all faq", req.query);
+  const { keyword, currentPage, resultPerPage } = req.query;
 
-  let faqs = await apiFeature.query;
-  let filteredFaqCount = faqs.length;
-  if (req.query.resultPerPage && req.query.currentPage) {
-    apiFeature.pagination();
-
-    faqs = await apiFeature.query.clone();
-    console.log("faqs1", faqs);
+  let match = {};
+  if (keyword) {
+    match = { type: keyword };
   }
 
+  const queryOptions = [];
+  if (currentPage && resultPerPage) {
+    const r = parseInt(resultPerPage);
+    const c = parseInt(currentPage);
+
+    const skip = r * (c - 1);
+    queryOptions.push({ $skip: skip });
+    queryOptions.push({ $limit: r });
+  }
+
+  let faqs = await aggregate(queryOptions, match)
+  faqs = faqs[0].faqs;
+  console.log(faqs);
+  let filteredFaqCount = faqs.length;
   res.status(200).json({ faqs, filteredFaqCount });
 });
 
@@ -34,7 +44,7 @@ exports.getFaq = catchAsyncError(async (req, res, next) => {
 
 exports.updateFaq = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
-  const faq = await faqModel.findByIdAndUpdate(req.params.id, req.body, {
+  const faq = await faqModel.findByIdAndUpdate(id, req.body, {
     new: true,
     runValidators: true,
     useFindAndModify: false,
