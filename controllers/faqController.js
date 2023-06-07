@@ -28,9 +28,10 @@ exports.getAllFaq = catchAsyncError(async (req, res, next) => {
     queryOptions.push({ $limit: r });
   }
 
-  let faqs = await aggregate(queryOptions, match)
-  faqs = faqs[0].faqs;
-  console.log(faqs);
+  let faqs = await aggregate(queryOptions, match);
+  if (faqs.length === 0) faqs = {};
+  else faqs = faqs[0].faqs;
+
   let filteredFaqCount = faqs.length;
   res.status(200).json({ faqs, filteredFaqCount });
 });
