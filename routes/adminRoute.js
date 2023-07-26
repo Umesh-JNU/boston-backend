@@ -20,6 +20,8 @@ const {
   createProduct,
   updateProduct,
   deleteProduct,
+  deleteSubProduct,
+  createSubProduct,
 } = require("../controllers/productController");
 const {
   createPromotion,
@@ -49,10 +51,10 @@ const {
   updateFaq,
   deleteFaq,
 } = require("../controllers/faqController");
-const { 
-  createShipping, 
-  updateShipping, 
-  deleteShipping 
+const {
+  createShipping,
+  updateShipping,
+  deleteShipping
 } = require("../controllers/shippingController");
 
 const { auth, isAdmin } = require("../middlewares/auth");
@@ -94,6 +96,9 @@ router
   .route("/product/:id")
   .put(auth, isAdmin, updateProduct)
   .delete(auth, isAdmin, deleteProduct);
+
+router.post("/sub-product/create", auth, isAdmin, createSubProduct);
+router.delete("/sub-product/:id", auth, isAdmin, deleteSubProduct);
 
 router.get("/review/all", auth, isAdmin, allReviews);
 router.delete("/review/:id", auth, isAdmin, deleteReview);

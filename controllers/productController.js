@@ -70,7 +70,6 @@ exports.getProduct = catchAsyncError(async (req, res, next) => {
 
 exports.updateProduct = catchAsyncError(async (req, res, next) => {
   console.log(req.body);
-  const { variant } = req.body;
   const { id } = req.params;
 
   const product = await productModel.findByIdAndUpdate(id, req.body, {
@@ -80,16 +79,6 @@ exports.updateProduct = catchAsyncError(async (req, res, next) => {
   }).populate("category").populate("sub_category");
   if (!product) return next(new ErrorHandler("Product not found", 404));
 
-  await cartModel.updateMany({}, { $pull: { "items.product": { $in: product.subProduct } } });
-  await subProdModel.deleteMany({ pid: product._id });
-
-  product.subProduct = [];
-  for (let v in variant) {
-    const _v = await subProdModel.create({ ...variant[v], pid: product._id });
-    product.subProduct.push(_v._id);
-  }
-
-  await (await product.save()).populate("subProduct");
   res.status(200).json({ product });
 });
 
@@ -107,5 +96,31 @@ exports.deleteProduct = catchAsyncError(async (req, res, next) => {
   res.status(200).json({
     success: true,
     message: "Product Deleted successfully.",
+  });
+});
+
+exports.createSubProduct = catchAsyncError(async (req, res, next) => {
+  console.log(req.body);
+  const { pid, qname, amount } = req.body;
+  const subProduct = await subProdModel.create({ pid, qname, amount });
+
+  res.status(200).json({ subProduct });
+});
+
+exports.deleteSubProduct = catchAsyncError(async (req, res, next) => {
+  const { id } = req.params;
+
+  if (!mongoose.isValidObjectId(id)) {
+    return next(new ErrorHandler("Invalid Id.", 400));
+  }
+
+  let subProduct = await subProdModel.findById(id);
+  if (!subProduct) return next(new ErrorHandler("Variant not found", 404));
+
+  await subProduct.remove();
+
+  res.status(200).json({
+    success: true,
+    message: "Variant Deleted successfully.",
   });
 });
