@@ -15,9 +15,10 @@ const getDesc = (label, charge) => {
 
 exports.createShipping = catchAsyncError(async (req, res, next) => {
   console.log("create shipping", req.body);
-  const { label, charge } = req.body;
-  const description = getDesc(label, charge);
-  const shipping = await shippingModel.create({ label, description, charge });
+  // const { label, charge } = req.body;
+  // const description = getDesc(label, charge);
+  // const shipping = await shippingModel.create({ label, description, charge });
+  const shipping = await shippingModel.create(req.body);
   res.status(201).json({ shipping });
 });
 

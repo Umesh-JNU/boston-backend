@@ -53,17 +53,25 @@ exports.createOrder = catchAsyncError(async (req, res, next) => {
   console.log("orderId ", orderId);
   console.log('order create', req.body);
 
-  // if (coupon_code) {
-  //   const coupon = await couponModel.findOne({ user: userId, _id: coupon_code });
-  //   console.log("coupon", coupon);
-  //   console.log({ now: Date.now(), createdAt: coupon.createdAt, diff: Date.now() - coupon.createdAt })
+  if (coupon_code) {
+    const coupon = await couponModel.findOne({ user: userId, _id: coupon_code });
 
-  //   if (Date.now() - coupon.createdAt <= 30 * 60 * 60 * 1000) {
-  //     total -= coupon.amount;
-  //     await coupon.remove();
-  //   }
-  //   else return next(new ErrorHandler("Coupon is expired.", 401));
-  // }
+    if (!coupon) return next(new ErrorHandler("Invalid coupon or has been expired.", 400));
+    console.log("coupon", coupon);
+    console.log({ now: Date.now(), createdAt: coupon.createdAt, diff: Date.now() - coupon.createdAt })
+
+    if (Date.now() - coupon.createdAt <= 30 * 60 * 60 * 1000) {
+      total -= coupon.amount;
+
+      coupon.status = "used";
+      await coupon.save();
+    }
+    else {
+      coupon.status = "expired";
+      await coupon.save();
+      return next(new ErrorHandler("Coupon is expired.", 401));
+    }
+  }
 
   total += charge;
   const savedOrder = await Order.create({

@@ -50,7 +50,7 @@ const productSchema = new mongoose.Schema(
     },
     description: {
       type: String,
-      required: [true, "Please describe the product."],
+      // required: [true, "Please describe the product."],
     },
     product_images: [{ type: String }],
     stock: { type: Boolean, default: true },

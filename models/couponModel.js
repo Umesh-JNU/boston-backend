@@ -10,6 +10,11 @@ const couponSchema = new mongoose.Schema(
       type: Number,
       default: 10,
     },
+    status: {
+      type: String,
+      default: "valid",
+      enum: ["valid", "used", "expired"],
+    },
   },
   { timestamps: true }
 );
