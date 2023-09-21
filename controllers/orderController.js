@@ -7,6 +7,7 @@ const ErrorHandler = require("../utils/errorHandler");
 const couponModel = require("../models/couponModel");
 const addressModel = require("../models/addressModel");
 const { calc_shipping } = require("./addressController");
+const userModel = require("../models/userModel");
 
 exports.createOrder = catchAsyncError(async (req, res, next) => {
   const userId = req.userId;
@@ -73,12 +74,17 @@ exports.createOrder = catchAsyncError(async (req, res, next) => {
     }
   }
 
-  total += charge;
+  const user = await userModel.findById(userId);
+  if (!user.free_ship) {
+    total += charge;
+  }
+  // total += charge;
   const savedOrder = await Order.create({
     userId: userId,
     products: products,
     amount: total,
     shipping_charge: charge,
+    free_ship: user.free_ship,
     address: {
       province,
       post_code,

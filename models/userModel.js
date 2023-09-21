@@ -37,6 +37,10 @@ const userSchema = new mongoose.Schema(
       type: Number,
       required: [true, "Mobile number is required."],
     },
+    free_ship: {
+      type: Boolean,
+      default: false
+    },  
     role: {
       type: String,
       default: "user",

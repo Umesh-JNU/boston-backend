@@ -4,6 +4,7 @@ const ErrorHandler = require("../utils/errorHandler");
 const addressModel = require("../models/addressModel");
 const cartModel = require("../models/cartModel");
 const { calc_total } = require("./cartController");
+const userModel = require("../models/userModel");
 
 
 const calc_shipping = (total, addr, next) => {
@@ -22,7 +23,7 @@ const calc_shipping = (total, addr, next) => {
   let charge = 0, message = "It will take 2-3 business days for order to be delivered."
   const isProvince = addr.province.toLowerCase() === 'ontario';
   const isTown = towns.includes(addr.town.toLowerCase());
-  console.log({isProvince, isTown});
+  console.log({ isProvince, isTown });
   console.log(isProvince && isTown);
 
   switch (true) {
@@ -176,9 +177,12 @@ const getShippingCharge = catchAsyncError(async (req, res, next) => {
   const [total, inSalePrice] = calc_total(cart);
   const [charge, message] = calc_shipping(total, addr, next);
 
+  console.log({ total, charge })
+  const user = await userModel.findById(req.userId);
   res.status(200).json({
     total,
     charge,
+    free_ship: user.free_ship,
     message
   })
 });

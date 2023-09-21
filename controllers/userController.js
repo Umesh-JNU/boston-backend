@@ -179,18 +179,26 @@ exports.deleteUser = catchAsyncError(async (req, res, next) => {
 });
 
 exports.updateUser = catchAsyncError(async (req, res, next) => {
+  console.log("user update", req.body);
   const { id } = req.params;
   console.log("user update admin", id);
-  const { firstname, lastname, mobile_no, role } = req.body;
+  // const { firstname, lastname, mobile_no, role } = req.body;
 
-  const user = await userModel.findById(id);
+  // const user = await userModel.findById(id);
+  // if (!user) return next(new ErrorHandler("User not found.", 404));
+
+  // user.firstname = firstname;
+  // user.lastname = lastname;
+  // user.mobile_no = mobile_no;
+  // user.role = role;
+  // await user.save();
+
+  const user = await userModel.findByIdAndUpdate(id, req.body, {
+    new: true,
+    runValidators: true,
+    useFindAndModify: false
+  });
   if (!user) return next(new ErrorHandler("User not found.", 404));
-
-  user.firstname = firstname;
-  user.lastname = lastname;
-  user.mobile_no = mobile_no;
-  user.role = role;
-  await user.save();
 
   res.status(200).json({
     user,
