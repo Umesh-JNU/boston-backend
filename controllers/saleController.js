@@ -3,15 +3,67 @@ const ErrorHandler = require("../utils/errorHandler");
 const { productModel, categoryModel, subProdModel } = require("../models/productModel");
 const saleModel = require("../models/saleModel");
 const APIFeatures = require("../utils/apiFeatures");
+const cron = require("node-cron");
 
 const launchSale = (start_date) => {
 	const dt = new Date();
-	console.log({dt});
+	console.log({ dt });
 	const coming_date = new Date(dt.setDate(dt.getDate() + 1)).toISOString().slice(0, 10);
-	console.log({dt, start_date, coming_date});
+	console.log({ dt, start_date, coming_date });
 
 	return start_date < coming_date;
 };
+
+const jobLaunchSale = async () => {
+	const today = new Date(new Date().setHours(0, 0, 0, 0));
+
+	const sales = await saleModel.find({});
+	for (var i in sales) {
+		const { type, discount, start_date, end_date } = sales[i];
+
+		switch (type) {
+			case "*":
+				console.log({ type });
+				if (start_date === today)
+					await productModel.updateMany({}, { $set: { sale: discount } });
+
+				if (end_date === today)
+					await productModel.updateMany({}, { $set: { sale: 0 } });
+				break;
+
+			case "category":
+				console.log({ options });
+
+				const category = await categoryModel.findById(sales[i].category);
+				if (!category) break;
+
+				if (start_date === today)
+					await productModel.updateMany({ category: sales[i].category }, { $set: { sale: discount } });
+
+				if (end_date === today)
+					await productModel.updateMany({ category: sales[i].category }, { $set: { sale: 0 } });
+				break;
+
+			case "product":
+				console.log("product");
+
+				const product = await productModel.findById(sales[i].product);
+				if (!product) break;
+
+				if (start_date === today)
+					product.sale = discount;
+
+				if (end_date === today)
+					product.sale = 0;
+
+				await product.save();
+				break;
+
+			default:
+				break;
+		}
+	};
+}
 
 exports.createSale = catchAsyncError(async (req, res, next) => {
 	const { type, discount, id, start_date, end_date } = req.body;
@@ -77,6 +129,9 @@ exports.createSale = catchAsyncError(async (req, res, next) => {
 
 	// finally create a new sale 
 	const sale = await saleModel.create(saleData);
+
+	cron.schedule("0 0 * * *", () => { jobLaunchSale(); });
+
 	res.status(200).json({ products, sale });
 })
 

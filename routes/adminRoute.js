@@ -22,6 +22,8 @@ const {
   deleteProduct,
   deleteSubProduct,
   createSubProduct,
+  getAllProducts,
+  getProduct,
 } = require("../controllers/productController");
 const {
   createPromotion,
@@ -92,8 +94,10 @@ router
   .delete(auth, isAdmin, deleteSubCategory);
 
 router.post("/product/create", auth, isAdmin, createProduct);
+router.get("/product/all", auth, isAdmin, getAllProducts);
 router
   .route("/product/:id")
+  .get(auth, isAdmin, getProduct)
   .put(auth, isAdmin, updateProduct)
   .delete(auth, isAdmin, deleteProduct);
 
