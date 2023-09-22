@@ -38,6 +38,7 @@ exports.createOrder = catchAsyncError(async (req, res, next) => {
     }
 
     prod.volume = product.volume - quantity;
+    prod.stock = (product.volume - quantity) > 0 ;
     await prod.save();
     // await subProdModel.findByIdAndUpdate(product._id, { volume: product.volume - quantity });
   }

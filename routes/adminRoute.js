@@ -23,7 +23,7 @@ const {
   deleteSubProduct,
   createSubProduct,
   getAllProducts,
-  getProduct,
+  getProductAdmin,
 } = require("../controllers/productController");
 const {
   createPromotion,
@@ -97,7 +97,7 @@ router.post("/product/create", auth, isAdmin, createProduct);
 router.get("/product/all", auth, isAdmin, getAllProducts);
 router
   .route("/product/:id")
-  .get(auth, isAdmin, getProduct)
+  .get(auth, isAdmin, getProductAdmin)
   .put(auth, isAdmin, updateProduct)
   .delete(auth, isAdmin, deleteProduct);
 

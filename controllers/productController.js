@@ -26,26 +26,6 @@ exports.getAllProducts = catchAsyncError(async (req, res, next) => {
   const productCount = await productModel.countDocuments();
   console.log("productCount", productCount);
 
-  // for admin
-  if (req.user && req.user.role === 'admin') {
-    const apiFeature = new APIFeatures(
-      productModel.find().sort({ createdAt: -1 }).populate("category sub_category"),
-      req.query
-    ).search("name");
-
-    var products = await apiFeature.query;
-    console.log("products", products);
-    let filteredProductCount = products.length;
-    if (req.query.resultPerPage && req.query.currentPage) {
-      apiFeature.pagination();
-
-      console.log("filteredProductCount", filteredProductCount);
-      products = await apiFeature.query.clone();
-    }
-    console.log("products", products);
-    return res.status(200).json({ products, productCount, filteredProductCount });
-  }
-
   // for users
   const { keyword, currentPage, resultPerPage } = req.query;
 
@@ -75,21 +55,109 @@ exports.getAllProducts = catchAsyncError(async (req, res, next) => {
     queryOptions.push({ $skip: skip });
     queryOptions.push({ $limit: r });
   }
-  var products = await aggregate(queryOptions, match);
 
-  let filteredProductCount = products.length;
+  // for admin
+  if (req.user && req.user.role === 'admin') {
+    var products = await productModel.aggregate([
+      { $match: { ...match } },
+      {
+        $lookup: {
+          from: "categories",
+          localField: "category",
+          foreignField: "_id",
+          as: "category"
+        }
+      },
+      { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "subcategories",
+          localField: "sub_category",
+          foreignField: "_id",
+          as: "sub_category"
+        }
+      },
+      { $unwind: { path: "$sub_category", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "subproducts",
+          localField: "_id",
+          foreignField: "pid",
+          as: "subProducts"
+        }
+      },
+      { $sort: { createdAt: -1 } },
+      ...queryOptions
+    ]);
+
+    // const apiFeature = new APIFeatures(
+    //   productModel.find().sort({ createdAt: -1 }).populate("category sub_category"),
+    //   req.query
+    // ).search("name");
+
+    // var products = await apiFeature.query;
+    // console.log("products", products);
+    // let filteredProductCount = products.length;
+    // if (req.query.resultPerPage && req.query.currentPage) {
+    //   apiFeature.pagination();
+
+    //   console.log("filteredProductCount", filteredProductCount);
+    //   products = await apiFeature.query.clone();
+    // }
+    // console.log("products", products);
+    // return res.status(200).json({ products, productCount, filteredProductCount });
+  }
+  else {
+    var products = await aggregate(queryOptions, match);
+  }
+
+  const filteredProductCount = products.length;
   res.status(200).json({ products, productCount, filteredProductCount });
+});
+
+exports.getProductAdmin = catchAsyncError(async (req, res, next) => {
+  const { id } = req.params;
+
+  const products = await productModel.aggregate([
+    { $match: { _id: new mongoose.Types.ObjectId(id) } },
+    {
+      $lookup: {
+        from: "categories",
+        localField: "category",
+        foreignField: "_id",
+        as: "category"
+      }
+    },
+    { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
+    {
+      $lookup: {
+        from: "subcategories",
+        localField: "sub_category",
+        foreignField: "_id",
+        as: "sub_category"
+      }
+    },
+    { $unwind: { path: "$sub_category", preserveNullAndEmptyArrays: true } },
+    {
+      $lookup: {
+        from: "subproducts",
+        localField: "_id",
+        foreignField: "pid",
+        as: "subProducts"
+      }
+    }
+  ]);
+  // await productModel.findById(id).populate("category sub_category");
+  if (products.length <= 0) {
+    console.log("dfsdjkfsdhfksdhfskjfhsdkf")
+    return next(new ErrorHandler("Product not found", 404));
+  }
+  console.log({ products })
+  res.status(200).json({ product: products[0] });
 });
 
 exports.getProduct = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
-  if (req.user && req.user.role === "admin") {
-    const product = await productModel.findById(id).populate("category sub_category");
-    if (!product)
-      return next(new ErrorHandler("Product not found", 404));
-    return res.status(200).json({ product });
-  }
-
   const products = await aggregate([], { _id: mongoose.Types.ObjectId(id) });
   if (products.length === 0) return next(new ErrorHandler("Product not found", 404));
 
@@ -139,7 +207,7 @@ exports.deleteProduct = catchAsyncError(async (req, res, next) => {
 exports.createSubProduct = catchAsyncError(async (req, res, next) => {
   console.log(req.body);
   const { pid, qname, amount, volume } = req.body;
-  const subProduct = await subProdModel.create({ pid, qname, amount, volume, stock: volume > 0 });
+  const subProduct = await subProdModel.create({ pid, qname, amount, volume, stock: parseInt(volume) > 0 });
 
   res.status(200).json({ subProduct });
 });

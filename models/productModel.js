@@ -110,7 +110,7 @@ const aggregate = async (queryOptions, match) => {
         pipeline: [
           {
             $match: {
-              $expr: { $eq: ["$_id", "$$productId"] },
+              $expr: { $eq: ["$_id", "$$productId"] }, // used to remove redundant populate
               ...match,
             }
           },
