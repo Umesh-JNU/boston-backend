@@ -33,6 +33,10 @@ const orderSchema = new Schema(
       type: Number,
       required: true,
     },
+    free_ship: {
+      type: Boolean,
+      default: false
+    },
     address: {
       province: {
         type: String,

@@ -8,6 +8,7 @@ const couponModel = require("../models/couponModel");
 const addressModel = require("../models/addressModel");
 const { calc_shipping } = require("./addressController");
 const userModel = require("../models/userModel");
+const { productModel, subProdModel } = require("../models/productModel");
 
 exports.createOrder = catchAsyncError(async (req, res, next) => {
   const userId = req.userId;
@@ -22,6 +23,24 @@ exports.createOrder = catchAsyncError(async (req, res, next) => {
   if (cart?.items.length <= 0)
     return next(new ErrorHandler("Order can't placed. Add product to cart.", 401));
   console.log(cart.items[0].product);
+
+  // update the product status
+  for (var i in cart.items) {
+    console.log(i, cart.items[i]);
+    const { product, quantity } = cart.items[i];
+    if (quantity > product.volume) {
+      return next(new ErrorHandler("Some of items in your cart is out of stock.", 400));
+    }
+
+    const prod = await subProdModel.findById(product._id);
+    if (!prod) {
+      return next(new ErrorHandler("Something went wrong.", 400));
+    }
+
+    prod.volume = product.volume - quantity;
+    await prod.save();
+    // await subProdModel.findByIdAndUpdate(product._id, { volume: product.volume - quantity });
+  }
 
   var total = 0;
   const products = cart.items.map((item) => {

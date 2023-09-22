@@ -53,7 +53,6 @@ const productSchema = new mongoose.Schema(
       // required: [true, "Please describe the product."],
     },
     product_images: [{ type: String }],
-    stock: { type: Boolean, default: true },
     rating: { type: Number, default: 0 },
     sale: { type: Number, default: 0 },
     category: {
@@ -86,6 +85,8 @@ const subProductSchema = new mongoose.Schema(
       type: String,
       required: [true, "Please provide a quantity type name"],
     },
+    stock: { type: Boolean, default: false },
+    volume: { type: Number, default: 0 }
   },
   { timestamps: true }
 );
