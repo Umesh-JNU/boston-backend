@@ -3,6 +3,7 @@ const ErrorHandler = require("../utils/errorHandler");
 const cartModel = require("../models/cartModel");
 const orderModel = require("../models/orderModel");
 const { subProdModel } = require("../models/productModel");
+const { isValidObjectId } = require("mongoose");
 
 const calc_total = (cart) => {
   var total = 0;
@@ -91,28 +92,65 @@ const deleteItem = catchAsyncError(async (req, res, next) => {
 });
 
 const recentCart = catchAsyncError(async (req, res, next) => {
-  try {
-    const order = await orderModel
-      .findOne({ _id: req.body.orderId })
-      .populate("products.product");
-
-    const ord = order?.products?.map((p) => {
-      return {
-        product: { ...p?.product },
-        quantity: p?.quantity,
-      };
-    });
-
-    const cart = await cartModel.updateOne(
-      { user: req.userId },
-      { $set: { items: ord } }
-    );
-
-    res.status(200).json({ message: "Updated!" });
-  } catch (error) {
-    console.log(error);
+  console.log("in recent cart", req.body);
+  const { orderId } = req.body;
+  if (!orderId || !isValidObjectId(orderId)) {
+    return next(new ErrorHandler("Please check the order ID or it may be invalid order ID.", 400));
   }
+
+  const order = await orderModel
+    .findOne({ _id: req.body.orderId })
+    .populate("products.product");
+
+  if (!order) {
+    return next(new ErrorHandler("Order not found.", 404));
+  }
+
+  for (var i in order.products) {
+    const prod = await subProdModel.findById(order.products[i].product._id);
+    if (!prod) {
+      return next(new ErrorHandler("Some of items in your order is not available. Please try later.", 400));
+    }
+  }
+  console.log("order.product", order.products);
+
+  const ord = order?.products?.map((p) => {
+    return {
+      product: { ...p?.product },
+      quantity: p?.quantity,
+    };
+  });
+
+  const cart = await cartModel.updateOne(
+    { user: req.userId },
+    { $set: { items: ord } }
+  );
+
+  res.status(200).json({ message: "Updated!" });
 });
+// const recentCart = catchAsyncError(async (req, res, next) => {
+//   try {
+//     const order = await orderModel
+//       .findOne({ _id: req.body.orderId })
+//       .populate("products.product");
+
+//     const ord = order?.products?.map((p) => {
+//       return {
+//         product: { ...p?.product },
+//         quantity: p?.quantity,
+//       };
+//     });
+
+//     const cart = await cartModel.updateOne(
+//       { user: req.userId },
+//       { $set: { items: ord } }
+//     );
+
+//     res.status(200).json({ message: "Updated!" });
+//   } catch (error) {
+//     console.log(error);
+//   }
+// });
 
 const updateItem = catchAsyncError(async (req, res, next) => {
   const { quantity } = req.body;
