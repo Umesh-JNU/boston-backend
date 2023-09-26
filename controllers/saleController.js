@@ -15,19 +15,23 @@ const launchSale = (start_date) => {
 };
 
 const jobLaunchSale = async () => {
-	const today = new Date(new Date().setHours(0, 0, 0, 0));
+	const today = new Date().toISOString().slice(0, 10);
 
 	const sales = await saleModel.find({});
 	for (var i in sales) {
 		const { type, discount, start_date, end_date } = sales[i];
+		const sd = start_date.toISOString().slice(0, 10);
+		const ed = end_date.toISOString().slice(0, 10);
 
+		console.log({ sd, ed, today });
+		
 		switch (type) {
 			case "*":
 				console.log({ type });
-				if (start_date === today)
+				if (sd === today)
 					await productModel.updateMany({}, { $set: { sale: discount } });
 
-				if (end_date === today)
+				if (ed === today)
 					await productModel.updateMany({}, { $set: { sale: 0 } });
 				break;
 
@@ -37,10 +41,10 @@ const jobLaunchSale = async () => {
 				const category = await categoryModel.findById(sales[i].category);
 				if (!category) break;
 
-				if (start_date === today)
+				if (sd === today)
 					await productModel.updateMany({ category: sales[i].category }, { $set: { sale: discount } });
 
-				if (end_date === today)
+				if (ed === today)
 					await productModel.updateMany({ category: sales[i].category }, { $set: { sale: 0 } });
 				break;
 
@@ -50,10 +54,10 @@ const jobLaunchSale = async () => {
 				const product = await productModel.findById(sales[i].product);
 				if (!product) break;
 
-				if (start_date === today)
+				if (sd === today)
 					product.sale = discount;
 
-				if (end_date === today)
+				if (ed === today)
 					product.sale = 0;
 
 				await product.save();
@@ -130,7 +134,7 @@ exports.createSale = catchAsyncError(async (req, res, next) => {
 	// finally create a new sale 
 	const sale = await saleModel.create(saleData);
 
-	cron.schedule("0 0 * * *", () => { jobLaunchSale(); });
+	cron.schedule("0 0 * * *", jobLaunchSale);
 
 	res.status(200).json({ products, sale });
 })

@@ -37,10 +37,11 @@ exports.getShipping = catchAsyncError(async (req, res, next) => {
 
 exports.updateShipping = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
-  const { label, charge } = req.body;
-  const description = getDesc(label, charge);
+  // const { label, charge } = req.body;
+  // const description = getDesc(label, charge);
 
-  const shipping = await shippingModel.findByIdAndUpdate(id, { label, description, charge }, {
+  // const shipping = await shippingModel.findByIdAndUpdate(id, { label, description, charge }, {
+  const shipping = await shippingModel.findByIdAndUpdate(id, req.body, {
     new: true,
     runValidators: true,
     useFindAndModify: false,
