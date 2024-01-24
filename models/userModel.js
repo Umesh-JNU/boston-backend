@@ -40,7 +40,11 @@ const userSchema = new mongoose.Schema(
     free_ship: {
       type: Boolean,
       default: false
-    },  
+    },
+    points: {
+      type: Number,
+      default: 0
+    },
     role: {
       type: String,
       default: "user",

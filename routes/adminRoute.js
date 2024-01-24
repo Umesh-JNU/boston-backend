@@ -62,7 +62,11 @@ const {
 const { auth, isAdmin } = require("../middlewares/auth");
 const { s3Uploadv2, upload, s3UploadMulti } = require("../utils/s3");
 const { createSale, getAllSale, getSale, updateSale, deleteSale } = require("../controllers/saleController");
+const { updateRefreshToken } = require("../controllers/gmailBotController");
+
 const router = express.Router();
+
+router.put("/update-refresh-token", auth, isAdmin, updateRefreshToken);
 
 router.get("/all", getAll);
 router.get("/statistics/:time", auth, isAdmin, getStatistics);

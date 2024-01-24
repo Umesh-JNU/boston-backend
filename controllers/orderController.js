@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const Order = require("../models/orderModel");
 const cartModel = require("../models/cartModel");
 const { v4: uuid } = require("uuid");
@@ -8,10 +10,66 @@ const couponModel = require("../models/couponModel");
 const addressModel = require("../models/addressModel");
 const { calc_shipping } = require("./addressController");
 const userModel = require("../models/userModel");
+const { sendEmail } = require("../utils/sendEmail")
+
 const { productModel, subProdModel } = require("../models/productModel");
+
+const checkOrderAndUpdate = async (order, amount, fullPayment) => {
+  let product_list = "";
+  for (var i in order.products) {
+    // console.log({ p: order.products[i] })
+    const { product, quantity, parent_prod, updatedAmount } = order.products[i];
+
+    if (fullPayment && order.shipping_charge === 0) {
+      const prod = await subProdModel.findById(product._id);
+      prod.volume = product.volume - quantity;
+      prod.stock = (product.volume - quantity) > 0;
+      await prod.save();
+    }
+    
+
+    product_list += `<tr>
+      <td>${parseInt(i) + 1}</td>
+      <td>${parent_prod?.name}</td>
+      <td>${product?.qname}</td>
+      <td>${quantity}</td>
+      <td>${updatedAmount}</td>
+      <td>${quantity * updatedAmount}</td>
+    </tr>`;
+  }
+
+  const orderDetails = {
+    product_list,
+    shipping: `${order.shipping_charge}`,
+    ttl_amount: `${(order.amount-order.shipping_charge)+order.points_used+order.coupon_amount}`,
+    amount: `${amount}`,
+    coupon_amount: `${order.coupon_amount}`,
+    points: `${order.points_used}`,
+    status: fullPayment && order.shipping_charge == 0 ? 'paid' : order.status,
+    orderId: order.orderId,
+    ...order.address,
+    unit: order.address?.unit || ' ',
+    dashbaord_link:`https://admin.bostongexotics.com/admin/view/order/${order._id}`,
+    
+  }
+
+  console.log({ orderDetails, order });
+
+  const template = fs.readFileSync(path.join(__dirname + "/points.html"), "utf-8");
+  // /{{(\w+)}}/g - match {{Word}} globally
+  const renderedTemplate = template.replace(/{{(\w+)}}/g, (match, key) => {
+    console.log({ match, key })
+    return orderDetails[key] || match;
+  });
+  
+
+  await sendEmail(`Payment Made with Points - ${order.orderId}`, renderedTemplate, process.env.CLIENT_EMAIL);
+  console.log({ renderedTemplate });
+};
 
 exports.createOrder = catchAsyncError(async (req, res, next) => {
   const userId = req.userId;
+  console.log({ body: req.body });
 
   const cart = await cartModel
     .findOne({ user: userId })
@@ -37,9 +95,9 @@ exports.createOrder = catchAsyncError(async (req, res, next) => {
       return next(new ErrorHandler("Something went wrong.", 400));
     }
 
-    prod.volume = product.volume - quantity;
-    prod.stock = (product.volume - quantity) > 0 ;
-    await prod.save();
+    // prod.volume = product.volume - quantity;
+    // prod.stock = (product.volume - quantity) > 0;
+    // await prod.save();
     // await subProdModel.findByIdAndUpdate(product._id, { volume: product.volume - quantity });
   }
 
@@ -60,13 +118,13 @@ exports.createOrder = catchAsyncError(async (req, res, next) => {
     };
   });
 
-  const { addr_id, mobile_no, coupon_code } = req.body;
+  const { addr_id, mobile_no, coupon_code, sameDayDel, use_points } = req.body;
 
   const addr = await addressModel.findById(addr_id);
   if (!addr) return next(new ErrorHandler("Address not found", 404));
 
   const { province, town, street, post_code, unit } = addr;
-  const [charge, _] = calc_shipping(total, addr, next);
+  const [charge, _] = await calc_shipping(total, addr, next);
 
   const unique_id = uuid();
   const orderId = unique_id.slice(0, 6);
@@ -74,14 +132,19 @@ exports.createOrder = catchAsyncError(async (req, res, next) => {
   console.log("orderId ", orderId);
   console.log('order create', req.body);
 
+  var point_Decrease = 0;
+  var coupon_Decrease = 0;
+  var isFullPayment = false;
+
   if (coupon_code) {
-    const coupon = await couponModel.findOne({ user: userId, _id: coupon_code });
+    const coupon = await couponModel.findOne({ user: userId, _id: coupon_code, status: "valid" });
 
     if (!coupon) return next(new ErrorHandler("Invalid coupon or has been expired.", 400));
     console.log("coupon", coupon);
     console.log({ now: Date.now(), createdAt: coupon.createdAt, diff: Date.now() - coupon.createdAt })
 
     if (Date.now() - coupon.createdAt <= 30 * 60 * 60 * 1000) {
+      coupon_Decrease = coupon.amount;
       total -= coupon.amount;
 
       coupon.status = "used";
@@ -95,6 +158,27 @@ exports.createOrder = catchAsyncError(async (req, res, next) => {
   }
 
   const user = await userModel.findById(userId);
+
+  if (use_points) {
+    const points = user.points;
+
+    if (points < 10) {
+      return next(new ErrorHandler("Use Minimum 10 points to avail.", 401));
+    }
+    else {
+      if (total <= points) {
+        point_Decrease = total;
+        total = 0;
+        isFullPayment = true;
+      }
+      else {
+        total = total - points;
+        point_Decrease = points
+      }
+    }
+  }
+
+  //total= shipping +order price
   if (!user.free_ship) {
     total += charge;
   }
@@ -103,6 +187,8 @@ exports.createOrder = catchAsyncError(async (req, res, next) => {
     userId: userId,
     products: products,
     amount: total,
+    coupon_amount: coupon_Decrease,
+    points_used: point_Decrease,
     shipping_charge: charge,
     free_ship: user.free_ship,
     address: {
@@ -114,7 +200,20 @@ exports.createOrder = catchAsyncError(async (req, res, next) => {
       mobile_no
     },
     orderId: '#' + orderId,
+    same_day_del: sameDayDel
   });
+
+  if (point_Decrease > 0) {
+    await checkOrderAndUpdate(savedOrder, total, isFullPayment);
+    console.log({ isFullPayment, s: savedOrder.shipping_charge })
+    if (isFullPayment && savedOrder.shipping_charge === 0) {
+      savedOrder.status = "paid";
+      await savedOrder.save();
+    }
+
+    user.points -= point_Decrease;
+    await user.save();
+  }
 
   await cartModel.updateOne({ user: req.userId }, { $set: { items: [] } });
 

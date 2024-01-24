@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    table {
+      border: 1px solid #333;
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      border-right: 1px solid #333;
+      border-bottom: 1px solid #333;
+      padding: 1rem;
+    }
+
+    th {
+      text-align: left;
+    }
+
+    
+
+    table.address {
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+
+<body>
+  <table>
+    <thead>
+      <th>Sr. No.</th>
+      <th>Product Name</th>
+      <th>Subproduct</th>
+      <th>Quantity</th>
+      <th>Amount</th>
+      <th>Total</th>
+    </thead>
+    <tbody>
+      {{product_list}}
+    </tbody>
+  </table>
+  
+  <h3>Payment made with Points</h3>
+  
+  <h3>Points Used: {{points}}</h3>
+  <h3>Coupon Discount: ${{coupon_amount}}</h3>
+  <h3>Shipping Charges: ${{shipping}}</h3>
+  <h3>Total Amount: ${{ttl_amount}}</h3>
+  <h3>Amount to be paid By Customer: ${{amount}}</h3>
+  <h3>Order Status: {{status}}</h3>
+  <h3>Order Id: {{orderId}}</h3>
+  <a href=`${{dashbaord_link}}`>Track Order update for OrderId: {{orderId}}</a>
+
+  <table class="address">
+    <thead>
+      <th>Province</th>
+      <th>Town</th>
+      <th>Street</th>
+      <th>Post Code</th>
+      <th>Unit</th>
+      <th>Mobile No.</th>
+    </thead>
+    <tbody>
+      <td>{{province}}</td>
+      <td>{{town}}</td>
+      <td>{{street}}</td>
+      <td>{{post_code}}</td>
+      <td>{{unit}}</td>
+      <td>{{mobile_no}}</td>
+    </tbody>
+  </table>
+</body>
+
+</html>

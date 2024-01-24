@@ -5,22 +5,23 @@ const addressModel = require("../models/addressModel");
 const cartModel = require("../models/cartModel");
 const { calc_total } = require("./cartController");
 const userModel = require("../models/userModel");
+const shippingModel = require("../models/shippingModel");
 
+const towns = ["mississauga", "oakville", "milton", "brampton", "etobicoke"];
 
-const calc_shipping = (total, addr, next) => {
+const calc_shipping = async (total, addr, next) => {
   {/*
    1. if town belongs to Ontario and is one of [ "Mississauga", "Oakville", "Milton", "Brampton", "Etobicoke" ]
    - Same day delivery, 0 shipping charge
    2. town belongs to Ontario but is other than one of the above five towns
-   - 3-4 business day for delivery, 20$ shipping charge for order amount < 200$, otherwise 0
+   - 3-4 business day for delivery, 20$ shipping charge for order amount < 200$, otherwise as local or 0
    3. other than above two
-   - 3-4 business day for delivery, 40$ shipping charge for order amount < 300$, otherwise 0.
+   - 3-4 business day for delivery, 40$ shipping charge for order amount < 300$, otherwise as local or 0.
   */}
 
   console.log({ total, addr });
 
-  const towns = ["mississauga", "oakville", "milton", "brampton", "etobicoke"];
-  let charge = 0, message = "It will take 2-3 business days for order to be delivered."
+  let label = "Local", message = "It will take 2-3 business days for order to be delivered."
   const isProvince = addr.province.toLowerCase() === 'ontario';
   const isTown = towns.includes(addr.town.toLowerCase());
   console.log({ isProvince, isTown });
@@ -40,7 +41,7 @@ const calc_shipping = (total, addr, next) => {
       if (total < 60)
         return next(new ErrorHandler("Please add more items. Minimum order amount is 60$", 400));
 
-      if (total < 200) charge = 20;
+      if (total < 200) label = "Provincial";
       break;
 
     default:
@@ -48,12 +49,12 @@ const calc_shipping = (total, addr, next) => {
       if (total < 60)
         return next(new ErrorHandler("Please add more items. Minimum order amount is 60$", 400));
 
-      if (total < 300)
-        charge = 40;
+      if (total < 300) label = "National";
       break;
   }
 
-  return [charge, message];
+  const shipping = await shippingModel.findOne({ label });
+  return [shipping.charge, message];
 }
 
 const addAddr = catchAsyncError(async (req, res, next) => {
@@ -157,7 +158,25 @@ const getAddr = catchAsyncError(async (req, res, next) => {
 
   if (!address) return next(new ErrorHandler("Address not found.", 404));
 
-  res.status(200).json({ address });
+  const isProvince = address.province.toLowerCase() === 'ontario';
+  const isTown = towns.includes(address.town.toLowerCase());
+  let addrType = "Local";
+  switch (true) {
+    case isProvince && isTown:
+      console.log("CASE 1")
+      break;
+
+    case isProvince && !isTown:
+      console.log("CASE 2")
+      addrType = "Provincial";
+      break;
+
+    default:
+      console.log("CASE 3")
+      addrType = "National";
+      break;
+  }
+  res.status(200).json({ address, addrType });
 });
 
 const getShippingCharge = catchAsyncError(async (req, res, next) => {
@@ -175,7 +194,7 @@ const getShippingCharge = catchAsyncError(async (req, res, next) => {
     return next(new ErrorHandler("Cart not found", 404));
 
   const [total, inSalePrice] = calc_total(cart);
-  const [charge, message] = calc_shipping(total, addr, next);
+  const [charge, message] = await calc_shipping(total, addr, next);
 
   console.log({ total, charge })
   const user = await userModel.findById(req.userId);

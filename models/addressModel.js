@@ -20,7 +20,7 @@ const addrSchema = new mongoose.Schema(
     },
     unit: {
       type: String,
-      required: [true, "Please enter unit."],
+      // required: [true, "Please enter unit."],
     },
     defaultAddress: {
       type: Boolean,

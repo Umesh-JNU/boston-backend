@@ -17,6 +17,9 @@ app.use(
 
 app.get("/", (req, res, next) => res.json({ anc: "abc" }));
 
+const cron = require("node-cron");
+const { fetchMsgs } = require("./controllers/gmailBotController");
+
 const userRoute = require("./routes/userRoute");
 const productRoute = require("./routes/productRoute");
 const categoryRoute = require("./routes/categoryRoute");
@@ -44,8 +47,25 @@ app.use("/api/faq", faqRoute);
 app.use("/api/shipping", shippingRoute);
 
 app.all('*', async (req, res) => {
-  res.status(404).json({error:{message:"Not Found. Kindly Check the API path as well as request type"}})
+  res.status(404).json({ error: { message: "Not Found. Kindly Check the API path as well as request type" } })
 });
+
+cron.schedule("0 * * * *", async () => {
+  try {
+    console.log("1 hr ....");
+    await fetchMsgs()
+
+  } catch (error) {
+    console.log(error)
+  }
+})
+
+// setInterval(() => {
+//   console.log("5 sec....");
+//   fetchMsgs();
+// // }, 5 * 60 * 1000);
+// }, 30000);
+
 app.use(errorMiddleware);
 
 module.exports = app;

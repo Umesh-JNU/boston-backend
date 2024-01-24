@@ -5,13 +5,14 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js",
+    "start": "nodemon server.js",
     "dev": "nodemon server.js"
   },
   "author": "Umesh Kumar",
   "license": "MIT",
   "dependencies": {
     "aws-sdk": "^2.1328.0",
+    "axios": "^1.6.5",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
@@ -20,6 +21,7 @@
     "mongoose": "^6.9.2",
     "multer": "^1.4.5-lts.1",
     "node-cron": "^3.0.2",
+    "nodemailer": "^6.9.8",
     "uuidv4": "^6.2.13"
   }
 }

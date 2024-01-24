@@ -5,11 +5,14 @@ const {
   getAll,
   getOrder,
   getRecent,
+  updateOrderStatus
 } = require("../controllers/orderController");
 
 const router = express.Router();
 
 router.post("/add", auth, createOrder);
+
+router.put("/cancel-order/:id", auth, updateOrderStatus);
 
 router.get("/get-order", auth, getOrder);
 

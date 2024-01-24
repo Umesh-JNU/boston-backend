@@ -29,14 +29,25 @@ const orderSchema = new Schema(
       required: true,
       // min: [60, "Order can only be placed for amount at least 60"]
     },
+    coupon_amount:{
+      type: Number,
+      required: true,
+      
+    },
+    points_used:{
+      type: Number,
+      required: true,
+    },
     shipping_charge: {
       type: Number,
       required: true,
     },
+   
     free_ship: {
       type: Boolean,
-      default: false
+      default: false,
     },
+   
     address: {
       province: {
         type: String,
@@ -56,7 +67,7 @@ const orderSchema = new Schema(
       },
       unit: {
         type: String,
-        required: true,
+        // required: true,
       },
       mobile_no: {
         type: Number,
@@ -66,12 +77,13 @@ const orderSchema = new Schema(
     status: {
       type: String,
       default: "pending",
-      enum: ["pending", "paid", "delivered"],
+      enum: ["pending", "paid", "delivered", "cancelled"],
     },
     orderId: {
       type: String,
       required: true,
     },
+    same_day_del: { type: Boolean }
   },
   {
     timestamps: true,
