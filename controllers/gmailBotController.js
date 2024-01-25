@@ -44,6 +44,7 @@ const generateToken = async () => {
 const access_token = "ya29.a0AfB_byBM0rrYBsjYCPl_OBWXKYOzFlha005iSEwngUl9B6GKOBchU-w-2ZwR9gM8x2CGi3xOt26WbpF_FbjD1Cssfc59ArfMU8A2RA_1RQkPVhRSOKj8gE8riYHv8cIPZrdUngT3SxJTmuHH4v8wYBJO6AKS6pCjrkEhXAaCgYKAVsSARMSFQHGX2Miix9xk5XqOyYj8NmF8QUbXw0173";
 
 const url = "https://gmail.googleapis.com/gmail/v1/users/bostongeorgetransfer@gmail.com/messages?q=from:notify@payments.interac.ca&maxResults=10";
+// const url = "https://gmail.googleapis.com/gmail/v1/users/bostongeorgetransfer@gmail.com/messages?q=from:jnu.unknown@gmail.com&maxResults=10";
 // const url = "https://gmail.googleapis.com/gmail/v1/users/umesh.quantumitinnovation@gmail.com/messages?q=from:jnu.unknown@gmail.com&maxResults=10";
 // const url = "https://gmail.googleapis.com/gmail/v1/users/bostongeorgetransfer@gmail.com/messages?q=from:sanidhya.quantumitinnovation@gmail.com&maxResults=10"
 
@@ -63,8 +64,9 @@ const checkOrderAndUpdate = async (orderId, amount) => {
 
     if (amount >= order.amount) {
       const prod = await subProdModel.findById(product._id);
-      prod.volume = product.volume - quantity;
-      prod.stock = (product.volume - quantity) > 0;
+      console.log({ id: product._id, prod })
+      prod.volume = prod.volume - quantity;
+      prod.stock = (prod.volume - quantity) > 0;
       await prod.save();
     }
 

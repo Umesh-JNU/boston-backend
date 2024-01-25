@@ -22,8 +22,8 @@ const checkOrderAndUpdate = async (order, amount, fullPayment) => {
 
     if (fullPayment && (order.free_ship || order.shipping_charge === 0)) {
       const prod = await subProdModel.findById(product._id);
-      prod.volume = product.volume - quantity;
-      prod.stock = (product.volume - quantity) > 0;
+      prod.volume = prod.volume - quantity;
+      prod.stock = (prod.volume - quantity) > 0;
       await prod.save();
     }
 
