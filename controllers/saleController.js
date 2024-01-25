@@ -14,7 +14,7 @@ const launchSale = (start_date) => {
 	return start_date < coming_date;
 };
 
-const jobLaunchSale = async () => {
+exports.jobLaunchSale = async () => {
 	const today = new Date().toISOString().slice(0, 10);
 
 	const sales = await saleModel.find({});
@@ -134,7 +134,7 @@ exports.createSale = catchAsyncError(async (req, res, next) => {
 	// finally create a new sale 
 	const sale = await saleModel.create(saleData);
 
-	cron.schedule("0 0 * * *", jobLaunchSale);
+	// cron.schedule("0 0 * * *", jobLaunchSale);
 
 	res.status(200).json({ products, sale });
 })

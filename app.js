@@ -19,6 +19,7 @@ app.get("/", (req, res, next) => res.json({ anc: "abc" }));
 
 const cron = require("node-cron");
 const { fetchMsgs } = require("./controllers/gmailBotController");
+const { jobLaunchSale } = require("./controllers/saleController");
 
 const userRoute = require("./routes/userRoute");
 const productRoute = require("./routes/productRoute");
@@ -54,6 +55,16 @@ cron.schedule("0 * * * *", async () => {
   try {
     console.log("1 hr ....");
     await fetchMsgs()
+
+  } catch (error) {
+    console.log(error)
+  }
+})
+
+cron.schedule("0 0 * * *", async () => {
+  try {
+    console.log("daily ....");
+    await jobLaunchSale();
 
   } catch (error) {
     console.log(error)
