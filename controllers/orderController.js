@@ -20,13 +20,13 @@ const checkOrderAndUpdate = async (order, amount, fullPayment) => {
     // console.log({ p: order.products[i] })
     const { product, quantity, parent_prod, updatedAmount } = order.products[i];
 
-    if (fullPayment && order.shipping_charge === 0) {
+    if (fullPayment && (order.free_ship || order.shipping_charge === 0)) {
       const prod = await subProdModel.findById(product._id);
       prod.volume = product.volume - quantity;
       prod.stock = (product.volume - quantity) > 0;
       await prod.save();
     }
-    
+
 
     product_list += `<tr>
       <td>${parseInt(i) + 1}</td>
@@ -38,19 +38,20 @@ const checkOrderAndUpdate = async (order, amount, fullPayment) => {
     </tr>`;
   }
 
+
   const orderDetails = {
     product_list,
-    shipping: `${order.shipping_charge}`,
-    ttl_amount: `${(order.amount-order.shipping_charge)+order.points_used+order.coupon_amount}`,
+    shipping: `${order.free_ship ? 0 : order.shipping_charge}`,
+    ttl_amount: `${order.amount + order.points_used + order.coupon_amount}`,
     amount: `${amount}`,
     coupon_amount: `${order.coupon_amount}`,
     points: `${order.points_used}`,
-    status: fullPayment && order.shipping_charge == 0 ? 'paid' : order.status,
+    status: fullPayment && (order.free_ship || order.shipping_charge === 0) ? 'paid' : order.status,
     orderId: order.orderId,
     ...order.address,
     unit: order.address?.unit || ' ',
-    dashbaord_link:`https://admin.bostongexotics.com/admin/view/order/${order._id}`,
-    
+    dashbaord_link: `https://admin.bostongexotics.com/admin/view/order/${order._id}`,
+
   }
 
   console.log({ orderDetails, order });
@@ -61,7 +62,7 @@ const checkOrderAndUpdate = async (order, amount, fullPayment) => {
     console.log({ match, key })
     return orderDetails[key] || match;
   });
-  
+
 
   await sendEmail(`Payment Made with Points - ${order.orderId}`, renderedTemplate, process.env.CLIENT_EMAIL);
   console.log({ renderedTemplate });
@@ -124,7 +125,7 @@ exports.createOrder = catchAsyncError(async (req, res, next) => {
   if (!addr) return next(new ErrorHandler("Address not found", 404));
 
   const { province, town, street, post_code, unit } = addr;
-  const [charge, _] = await calc_shipping(total, addr, next);
+  let [charge, _] = await calc_shipping(total, addr, next);
 
   const unique_id = uuid();
   const orderId = unique_id.slice(0, 6);
@@ -178,11 +179,10 @@ exports.createOrder = catchAsyncError(async (req, res, next) => {
     }
   }
 
-  //total= shipping +order price
   if (!user.free_ship) {
     total += charge;
   }
-  // total += charge;
+
   const savedOrder = await Order.create({
     userId: userId,
     products: products,
@@ -205,8 +205,8 @@ exports.createOrder = catchAsyncError(async (req, res, next) => {
 
   if (point_Decrease > 0) {
     await checkOrderAndUpdate(savedOrder, total, isFullPayment);
-    console.log({ isFullPayment, s: savedOrder.shipping_charge })
-    if (isFullPayment && savedOrder.shipping_charge === 0) {
+    console.log({ isFullPayment, s: savedOrder.free_ship })
+    if (isFullPayment && (savedOrder.free_ship || savedOrder.shipping_charge === 0)) {
       savedOrder.status = "paid";
       await savedOrder.save();
     }
@@ -295,7 +295,27 @@ exports.updateOrderStatus = catchAsyncError(async (req, res, next) => {
   if (!order) return next(new ErrorHandler("Order not found.", 404));
 
   order.status = status;
+
+  if (order.status === "paid") {
+    for (var i in order.products) {
+      // console.log({ p: order.products[i] })
+      const { product, quantity } = order.products[i];
+
+
+      const prod = await subProdModel.findById(product._id);
+      prod.volume = prod.volume - quantity;
+      prod.stock = (prod.volume - quantity) > 0;
+      await prod.save();
+
+    }
+  }
+  if (order.status === "cancelled") {
+    const user = await userModel.findById(order.userId)
+    user.points += order.points_used;
+    user.save()
+  }
   await order.save();
+
   res.status(200).json({ order });
 });
 

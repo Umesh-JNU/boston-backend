@@ -37,7 +37,7 @@ const generateToken = async () => {
 
   } catch (error) {
     console.log({ ERROR: "Refresh Token Expired.", errMsg: error.message });
-    await sendEmail("Refresh Token Expired", message, 'umesh.quantumitinnovation@gmail.com');
+    await sendEmail("Refresh Token Expired", message, process.env.DEVELOPER_EMAIL);
   }
 };
 
@@ -45,6 +45,7 @@ const access_token = "ya29.a0AfB_byBM0rrYBsjYCPl_OBWXKYOzFlha005iSEwngUl9B6GKOBc
 
 const url = "https://gmail.googleapis.com/gmail/v1/users/bostongeorgetransfer@gmail.com/messages?q=from:notify@payments.interac.ca&maxResults=10";
 // const url = "https://gmail.googleapis.com/gmail/v1/users/umesh.quantumitinnovation@gmail.com/messages?q=from:jnu.unknown@gmail.com&maxResults=10";
+// const url = "https://gmail.googleapis.com/gmail/v1/users/bostongeorgetransfer@gmail.com/messages?q=from:sanidhya.quantumitinnovation@gmail.com&maxResults=10"
 
 
 const checkOrderAndUpdate = async (orderId, amount) => {
@@ -55,14 +56,17 @@ const checkOrderAndUpdate = async (orderId, amount) => {
   }
 
   let product_list = "";
+
   for (var i in order.products) {
     // console.log({ p: order.products[i] })
     const { product, quantity, parent_prod, updatedAmount } = order.products[i];
 
-    const prod = await subProdModel.findById(product._id);
-    prod.volume = product.volume - quantity;
-    prod.stock = (product.volume - quantity) > 0;
-    await prod.save();
+    if (amount >= order.amount) {
+      const prod = await subProdModel.findById(product._id);
+      prod.volume = product.volume - quantity;
+      prod.stock = (product.volume - quantity) > 0;
+      await prod.save();
+    }
 
     product_list += `<tr>
       <td>${parseInt(i) + 1}</td>
@@ -83,10 +87,10 @@ const checkOrderAndUpdate = async (orderId, amount) => {
 
   const orderDetails = {
     product_list,
-    shipping: `${order.shipping_charge}`,
-    ttl_amount: `${(order.amount-order.shipping_charge)+order.points_used+order.coupon_amount}`,
-    amount_payable:`${order.amount}`,
-    remaining:`${order.amount-amount}`,
+    shipping: `${order.free_ship ? 0 : order.shipping_charge}`,
+    ttl_amount: `${order.amount + order.points_used + order.coupon_amount}`,
+    amount_payable: `${order.amount}`,
+    remaining: `${order.amount - amount}`,
     amount: `${amount}`,
     coupon_amount: `${order.coupon_amount}`,
     points: `${order.points_used}`,
@@ -94,19 +98,18 @@ const checkOrderAndUpdate = async (orderId, amount) => {
     orderId,
     ...order.address,
     unit: order.address?.unit || ' ',
-    dashbaord_link:`something_something/:${order.userId}`,
-    order_Percentage:order.status=="paid"?"Completely Paid":"Partially Remaining"
-    
+    dashbaord_link: `something_something/:${order.userId}`,
+    order_Percentage: order.status == "paid" ? "Completely Paid" : "Partially Remaining"
+
   }
-  const order_Percentage=order.status==="paid"?"Complete":"Partial"
- 
-  const template = fs.readFileSync(path.join(__dirname + `/${order_Percentage}.html`))
+  const order_Percentage = order.status === "paid" ? "Complete" : "Partial"
+
+  const template = fs.readFileSync(path.join(__dirname + `/${order_Percentage}.html`), "utf-8")
   // /{{(\w+)}}/g - match {{Word}} globally
   const renderedTemplate = template.replace(/{{(\w+)}}/g, (match, key) => {
     console.log({ match, key })
     return orderDetails[key] || match;
   });
-  
 
   await sendEmail(`Payment for Order - ${order_Percentage}`, renderedTemplate, process.env.CLIENT_EMAIL);
   console.log({ renderedTemplate });
@@ -184,8 +187,8 @@ exports.fetchMsgs = async () => {
       console.log({ id, threadId });
       const thread = await messageModel.findOne({ msgId: threadId });
 
-      if(!thread) {
-      // if (threadId === '189bc14834ae8bc2') {
+      if (!thread) {
+        // if (threadId === '189bc14834ae8bc2') {
         const result = await fetchMsg(threadId, access_token);
         const [orderId, amount] = parseMsg(result);
         console.log({ orderId, amount });
